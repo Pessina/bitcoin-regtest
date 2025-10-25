@@ -1,9 +1,10 @@
-import { spawn, ChildProcess } from 'child_process';
 import Client from 'bitcoin-core';
+import { ChildProcess, spawn } from 'child_process';
+
 import {
   BitcoinRegtestConfig,
-  PartialBitcoinRegtestConfig,
   mergeConfig,
+  PartialBitcoinRegtestConfig,
 } from './config';
 import {
   BitcoinRpcClient,
@@ -76,14 +77,16 @@ export class BitcoinRegtestManager {
         reject(new Error(`Failed to start bitcoind: ${error.message}`));
       });
 
-      setTimeout(async () => {
-        const nowRunning = await this.isBitcoindRunning();
-        if (nowRunning) {
-          this.log('bitcoind started');
-          resolve();
-        } else {
-          reject(new Error('bitcoind started but not responding'));
-        }
+      setTimeout(() => {
+        void (async () => {
+          const nowRunning = await this.isBitcoindRunning();
+          if (nowRunning) {
+            this.log('bitcoind started');
+            resolve();
+          } else {
+            reject(new Error('bitcoind started but not responding'));
+          }
+        })();
       }, 3000);
     });
   }
@@ -98,7 +101,7 @@ export class BitcoinRegtestManager {
         this.bitcoindProcess.kill();
         this.bitcoindProcess = null;
       }
-    } catch (error) {
+    } catch {
       // Already stopped
     }
   }
@@ -125,7 +128,7 @@ export class BitcoinRegtestManager {
     this.log(`Wallet address: ${this.walletAddress}`);
   }
 
-  async getWalletAddress(): Promise<string> {
+  getWalletAddress(): string {
     if (!this.walletAddress) {
       throw new Error('Wallet not initialized');
     }
@@ -137,7 +140,7 @@ export class BitcoinRegtestManager {
   }
 
   async mineBlocks(blocks: number, address?: string): Promise<string[]> {
-    const targetAddress = address || (await this.getWalletAddress());
+    const targetAddress = address || this.getWalletAddress();
     this.log(`Mining ${blocks} block(s)...`);
 
     const blockHashes = await this.client.generateToAddress(
@@ -151,14 +154,16 @@ export class BitcoinRegtestManager {
   private startAutoMining(): void {
     this.log(`Auto-mining enabled (${this.config.autoMineIntervalMs}ms)`);
 
-    this.autoMineTimer = setInterval(async () => {
-      try {
-        await this.mineBlocks(1);
-        const height = await this.client.getBlockCount();
-        this.log(`Block ${height} mined`);
-      } catch (error) {
-        console.error('Auto-mine error:', error);
-      }
+    this.autoMineTimer = setInterval(() => {
+      void (async () => {
+        try {
+          await this.mineBlocks(1);
+          const height = await this.client.getBlockCount();
+          this.log(`Block ${height} mined`);
+        } catch (error) {
+          console.error('Auto-mine error:', error);
+        }
+      })();
     }, this.config.autoMineIntervalMs);
   }
 

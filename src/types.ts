@@ -41,7 +41,10 @@ export interface BitcoinRpcClient extends Client {
   getBalance(): Promise<number>;
   sendToAddress(address: string, amount: number): Promise<string>;
   getTransaction(txid: string): Promise<BitcoinTransaction>;
-  listTransactions(account: string, count?: number): Promise<BitcoinTransactionListItem[]>;
+  listTransactions(
+    account: string,
+    count?: number
+  ): Promise<BitcoinTransactionListItem[]>;
   generateToAddress(blocks: number, address: string): Promise<string[]>;
   stop(): Promise<void>;
 }

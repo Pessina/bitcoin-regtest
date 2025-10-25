@@ -8,10 +8,12 @@ async function main() {
     await manager.start();
 
     // Handle shutdown gracefully
-    const shutdown = async () => {
-      console.log('\nShutting down...');
-      await manager.shutdown();
-      process.exit(0);
+    const shutdown = () => {
+      void (async () => {
+        console.log('\nShutting down...');
+        await manager.shutdown();
+        process.exit(0);
+      })();
     };
 
     process.on('SIGINT', shutdown);
@@ -25,4 +27,4 @@ async function main() {
   }
 }
 
-main();
+void main();

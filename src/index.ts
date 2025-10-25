@@ -1,8 +1,8 @@
 export { BitcoinRegtestManager } from './BitcoinRegtestManager';
 export {
+  type BitcoinRegtestConfig,
   defaultConfig,
   mergeConfig,
-  type BitcoinRegtestConfig,
   type PartialBitcoinRegtestConfig,
 } from './config';
 export type {
