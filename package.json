@@ -1,0 +1,72 @@
+{
+  "name": "bitcoin-regtest",
+  "version": "1.0.0",
+  "description": "Zero-config Bitcoin regtest environment with auto-mining. Perfect for local development and testing Bitcoin applications without running bitcoind manually.",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "bin": {
+    "bitcoin-regtest": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "PUBLISHING.md"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "start": "tsx src/cli.ts",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "yarn build",
+    "version:patch": "yarn version --patch --no-git-tag-version",
+    "version:minor": "yarn version --minor --no-git-tag-version",
+    "version:major": "yarn version --major --no-git-tag-version",
+    "version:beta": "yarn version --prerelease --preid=beta --no-git-tag-version",
+    "publish:beta": "yarn version:beta && yarn build && yarn publish --tag beta",
+    "publish:official": "yarn build && yarn publish"
+  },
+  "keywords": [
+    "bitcoin",
+    "regtest",
+    "testing",
+    "bitcoin-core",
+    "bitcoind",
+    "local-development",
+    "auto-mining",
+    "blockchain",
+    "cryptocurrency",
+    "btc"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sig-net/signet-solana-program.git",
+    "directory": "clients/bitcoin-regtest"
+  },
+  "bugs": {
+    "url": "https://github.com/sig-net/signet-solana-program/issues"
+  },
+  "homepage": "https://github.com/sig-net/signet-solana-program/tree/main/clients/bitcoin-regtest#readme",
+  "dependencies": {
+    "bitcoin-core": "^4.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.11",
+    "tsdown": "^0.15.6",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
