@@ -8,7 +8,9 @@ export interface BitcoinRegtestConfig {
   autoMineIntervalMs: number;
 }
 
-export const config: BitcoinRegtestConfig = {
+export type PartialBitcoinRegtestConfig = Partial<BitcoinRegtestConfig>;
+
+export const defaultConfig: BitcoinRegtestConfig = {
   rpcHost: 'localhost',
   rpcPort: 18443,
   rpcUser: 'test',
@@ -17,3 +19,12 @@ export const config: BitcoinRegtestConfig = {
   autoMineInitialBlocks: 101,
   autoMineIntervalMs: 10000,
 };
+
+export function mergeConfig(
+  userConfig?: PartialBitcoinRegtestConfig
+): BitcoinRegtestConfig {
+  return {
+    ...defaultConfig,
+    ...userConfig,
+  };
+}

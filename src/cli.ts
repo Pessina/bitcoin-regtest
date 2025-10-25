@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 
-import { start } from './index.js';
+import { BitcoinRegtestManager } from './index.js';
 
 async function main() {
   try {
-    const manager = await start();
+    const manager = new BitcoinRegtestManager();
+    await manager.start();
 
     // Handle shutdown gracefully
     const shutdown = async () => {
-      console.log('\n🛑 Shutting down...');
+      console.log('\nShutting down...');
       await manager.shutdown();
       process.exit(0);
     };
@@ -19,7 +20,7 @@ async function main() {
     // Keep process alive
     await new Promise(() => {});
   } catch (error) {
-    console.error('❌ Failed to start Bitcoin regtest:', error);
+    console.error('Failed to start Bitcoin regtest:', error);
     process.exit(1);
   }
 }
