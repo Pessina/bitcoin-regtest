@@ -1,44 +1,22 @@
 {
-  "name": "bitcoin-regtest",
+  "name": "bitcoin-regtest-monorepo",
   "version": "1.0.0",
-  "description": "Zero-config Bitcoin regtest environment with auto-mining. Perfect for local development and testing Bitcoin applications without running bitcoind manually.",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "private": true,
+  "description": "Bitcoin regtest environment with explorer UI",
   "type": "module",
-  "bin": {
-    "bitcoin-regtest": "./dist/cli.js"
-  },
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      }
-    }
-  },
-  "files": [
-    "dist",
-    "README.md",
-    "PUBLISHING.md"
+  "workspaces": [
+    "packages/*"
   ],
   "scripts": {
-    "build": "tsdown",
-    "build:watch": "tsdown --watch",
-    "start": "tsx src/cli.ts",
-    "clean": "rm -rf dist",
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix",
-    "format": "prettier --write \"src/**/*.{ts,js,json}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,js,json}\"",
-    "type-check": "tsc --noEmit",
-    "prepublishOnly": "yarn build",
-    "version:patch": "yarn version --patch --no-git-tag-version",
-    "version:minor": "yarn version --minor --no-git-tag-version",
-    "version:major": "yarn version --major --no-git-tag-version",
-    "version:beta": "yarn version --prerelease --preid=beta --no-git-tag-version",
-    "publish:beta": "yarn version:beta && yarn build && yarn publish --tag beta",
-    "publish:official": "yarn build && yarn publish"
+    "build": "yarn workspace @bitcoin-regtest/server run build && yarn workspace @bitcoin-regtest/web run build",
+    "build:watch": "yarn workspace @bitcoin-regtest/server run build:watch",
+    "start": "yarn workspace @bitcoin-regtest/server run start",
+    "clean": "rm -rf packages/*/dist packages/web/dist",
+    "lint": "eslint packages/**/src/**/*.{ts,tsx}",
+    "lint:fix": "eslint packages/**/src/**/*.{ts,tsx} --fix",
+    "format": "prettier --write \"packages/**/*.{ts,tsx,js,json}\"",
+    "format:check": "prettier --check \"packages/**/*.{ts,tsx,js,json}\"",
+    "type-check": "yarn workspace @bitcoin-regtest/server run type-check && yarn workspace @bitcoin-regtest/web run type-check"
   },
   "keywords": [
     "bitcoin",

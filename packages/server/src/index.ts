@@ -10,3 +10,4 @@ export type {
   BitcoinTransaction,
   BitcoinTransactionListItem,
 } from './types';
+export { startServer, stopServer } from './server';
