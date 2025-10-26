@@ -24,6 +24,7 @@
   ],
   "scripts": {
     "build": "tsdown",
+    "build:watch": "tsdown --watch",
     "start": "tsx src/cli.ts",
     "clean": "rm -rf dist",
     "lint": "eslint src/**/*.ts",
