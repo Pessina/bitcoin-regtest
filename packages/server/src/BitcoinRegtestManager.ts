@@ -79,6 +79,8 @@ export class BitcoinRegtestManager {
         `-rpcuser=${this.config.rpcUser}`,
         `-rpcpassword=${this.config.rpcPassword}`,
         `-rpcport=${this.config.rpcPort}`,
+        '-rpcbind=0.0.0.0',
+        '-rpcallowip=0.0.0.0/0',
         '-server',
         '-txindex',
         '-fallbackfee=0.00001',
