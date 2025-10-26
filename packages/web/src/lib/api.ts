@@ -67,6 +67,7 @@ export interface AddressBalance {
   balance: number;
   utxoCount: number;
   utxos: UTXO[];
+  transactions: AddressTransaction[];
 }
 
 export interface UTXO {
@@ -76,6 +77,15 @@ export interface UTXO {
   desc: string;
   amount: number;
   height: number;
+}
+
+export interface AddressTransaction {
+  txid: string;
+  time: number;
+  blockHeight: number;
+  type: 'incoming' | 'outgoing';
+  amount: number;
+  confirmations: number;
 }
 
 export interface BlockchainInfo {
@@ -191,16 +201,86 @@ export const api = {
   },
 
   async getAddressBalance(address: string): Promise<AddressBalance> {
+    // Get current UTXOs and balance
     const utxos = await rpc<{
       total_amount: number;
       unspents: UTXO[];
     }>('scantxoutset', ['start', [`addr(${address})`]]);
+
+    // Get transaction history by scanning recent blocks
+    const blockCount = await rpc<number>('getblockcount');
+    const transactions: AddressTransaction[] = [];
+    const seenTxids = new Set<string>();
+
+    // Scan last 100 blocks (or fewer if blockchain is shorter)
+    const blocksToScan = Math.min(100, blockCount + 1);
+    const startHeight = Math.max(0, blockCount - blocksToScan + 1);
+
+    for (let height = blockCount; height >= startHeight; height--) {
+      const blockHash = await rpc<string>('getblockhash', [height]);
+      const block = await rpc<{
+        time: number;
+        tx: Transaction[];
+      }>('getblock', [blockHash, 2]);
+
+      for (const tx of block.tx) {
+        // Skip if already processed
+        if (seenTxids.has(tx.txid)) continue;
+
+        // Check if transaction involves this address
+        let incoming = 0;
+        let outgoing = 0;
+
+        // Check outputs (incoming)
+        for (const vout of tx.vout) {
+          if (vout.scriptPubKey.address === address) {
+            incoming += vout.value;
+          }
+        }
+
+        // Check inputs (outgoing) - need to fetch previous transactions
+        for (const vin of tx.vin) {
+          if (vin.txid && vin.vout !== undefined) {
+            try {
+              const prevTx = await rpc<Transaction>('getrawtransaction', [
+                vin.txid,
+                true,
+              ]);
+              const prevOut = prevTx.vout[vin.vout];
+              if (prevOut?.scriptPubKey.address === address) {
+                outgoing += prevOut.value;
+              }
+            } catch {
+              // Ignore errors (e.g., coinbase transactions)
+            }
+          }
+        }
+
+        // Add transaction if it involves this address
+        if (incoming > 0 || outgoing > 0) {
+          const netAmount = incoming - outgoing;
+          transactions.push({
+            txid: tx.txid,
+            time: block.time,
+            blockHeight: height,
+            type: netAmount >= 0 ? 'incoming' : 'outgoing',
+            amount: Math.abs(netAmount),
+            confirmations: blockCount - height + 1,
+          });
+          seenTxids.add(tx.txid);
+        }
+      }
+    }
+
+    // Sort by time (newest first)
+    transactions.sort((a, b) => b.time - a.time);
 
     return {
       address,
       balance: utxos.total_amount || 0,
       utxoCount: utxos.unspents?.length || 0,
       utxos: utxos.unspents || [],
+      transactions,
     };
   },
 
@@ -222,5 +302,10 @@ export const api = {
       mediantime: info.mediantime,
       size_on_disk: info.size_on_disk,
     };
+  },
+
+  async sendFunds(address: string, amount: number): Promise<string> {
+    const txid = await rpc<string>('sendtoaddress', [address, amount]);
+    return txid;
   },
 };
