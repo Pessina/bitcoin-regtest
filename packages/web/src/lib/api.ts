@@ -88,6 +88,37 @@ export interface AddressTransaction {
   confirmations: number;
 }
 
+export interface TransactionInput {
+  txid?: string;
+  vout?: number;
+  address?: string;
+  value?: number;
+  isCoinbase: boolean;
+}
+
+export interface TransactionOutput {
+  n: number;
+  value: number;
+  address?: string;
+  scriptType: string;
+}
+
+export interface RecentTransaction {
+  txid: string;
+  hash: string;
+  blockHeight: number;
+  blockHash: string;
+  time: number;
+  size: number;
+  vsize: number;
+  weight: number;
+  inputs: TransactionInput[];
+  outputs: TransactionOutput[];
+  totalInput: number;
+  totalOutput: number;
+  fee: number;
+}
+
 export interface BlockchainInfo {
   chain: string;
   blocks: number;
@@ -203,9 +234,14 @@ export const api = {
   async getAddressBalance(address: string): Promise<AddressBalance> {
     // Get current UTXOs and balance
     const utxos = await rpc<{
+      success: boolean;
       total_amount: number;
       unspents: UTXO[];
     }>('scantxoutset', ['start', [`addr(${address})`]]);
+
+    if (!utxos.success) {
+      throw new Error('Failed to scan UTXO set for address');
+    }
 
     // Get transaction history by scanning recent blocks
     const blockCount = await rpc<number>('getblockcount');
@@ -307,5 +343,185 @@ export const api = {
   async sendFunds(address: string, amount: number): Promise<string> {
     const txid = await rpc<string>('sendtoaddress', [address, amount]);
     return txid;
+  },
+
+  async getLatestTransactions(limit = 20): Promise<RecentTransaction[]> {
+    const blockCount = await rpc<number>('getblockcount');
+    const transactions: RecentTransaction[] = [];
+    const seenTxids = new Set<string>();
+
+    let blocksScanned = 0;
+    const maxBlocksToScan = 10;
+
+    for (
+      let height = blockCount;
+      height >= 0 && blocksScanned < maxBlocksToScan;
+      height--
+    ) {
+      const blockHash = await rpc<string>('getblockhash', [height]);
+      const block = await rpc<{
+        hash: string;
+        time: number;
+        tx: Transaction[];
+      }>('getblock', [blockHash, 2]);
+
+      blocksScanned++;
+
+      for (const tx of block.tx) {
+        if (seenTxids.has(tx.txid)) continue;
+        seenTxids.add(tx.txid);
+
+        const inputs: TransactionInput[] = [];
+        let totalInput = 0;
+
+        for (const vin of tx.vin) {
+          if (vin.coinbase) {
+            inputs.push({
+              isCoinbase: true,
+            });
+          } else if (vin.txid && vin.vout !== undefined) {
+            try {
+              const prevTx = await rpc<Transaction>('getrawtransaction', [
+                vin.txid,
+                true,
+              ]);
+              const prevOut = prevTx.vout[vin.vout];
+              if (prevOut) {
+                totalInput += prevOut.value;
+                inputs.push({
+                  txid: vin.txid,
+                  vout: vin.vout,
+                  address: prevOut.scriptPubKey.address,
+                  value: prevOut.value,
+                  isCoinbase: false,
+                });
+              }
+            } catch {
+              inputs.push({
+                txid: vin.txid,
+                vout: vin.vout,
+                isCoinbase: false,
+              });
+            }
+          }
+        }
+
+        const outputs: TransactionOutput[] = tx.vout.map((vout) => ({
+          n: vout.n,
+          value: vout.value,
+          address: vout.scriptPubKey.address,
+          scriptType: vout.scriptPubKey.type,
+        }));
+
+        const totalOutput = tx.vout.reduce((sum, vout) => sum + vout.value, 0);
+        const fee = inputs[0]?.isCoinbase ? 0 : totalInput - totalOutput;
+
+        transactions.push({
+          txid: tx.txid,
+          hash: tx.hash,
+          blockHeight: height,
+          blockHash: block.hash,
+          time: block.time,
+          size: tx.size,
+          vsize: tx.vsize,
+          weight: tx.weight,
+          inputs,
+          outputs,
+          totalInput,
+          totalOutput,
+          fee,
+        });
+
+        if (transactions.length >= limit) {
+          return transactions;
+        }
+      }
+    }
+
+    return transactions;
+  },
+
+  async getTransaction(txid: string): Promise<RecentTransaction> {
+    const tx = await rpc<Transaction>('getrawtransaction', [txid, true]);
+    const blockCount = await rpc<number>('getblockcount');
+
+    const blockHash = await rpc<string>('getblockhash', [
+      (tx as unknown as { blockhash: string }).blockhash
+        ? undefined
+        : blockCount,
+    ]).catch(async () => {
+      const rawTx = tx as unknown as { blockhash?: string };
+      return rawTx.blockhash || '';
+    });
+
+    const block = await rpc<{
+      hash: string;
+      time: number;
+      height: number;
+    }>('getblock', [
+      (tx as unknown as { blockhash?: string }).blockhash || blockHash,
+      1,
+    ]);
+
+    const inputs: TransactionInput[] = [];
+    let totalInput = 0;
+
+    for (const vin of tx.vin) {
+      if (vin.coinbase) {
+        inputs.push({
+          isCoinbase: true,
+        });
+      } else if (vin.txid && vin.vout !== undefined) {
+        try {
+          const prevTx = await rpc<Transaction>('getrawtransaction', [
+            vin.txid,
+            true,
+          ]);
+          const prevOut = prevTx.vout[vin.vout];
+          if (prevOut) {
+            totalInput += prevOut.value;
+            inputs.push({
+              txid: vin.txid,
+              vout: vin.vout,
+              address: prevOut.scriptPubKey.address,
+              value: prevOut.value,
+              isCoinbase: false,
+            });
+          }
+        } catch {
+          inputs.push({
+            txid: vin.txid,
+            vout: vin.vout,
+            isCoinbase: false,
+          });
+        }
+      }
+    }
+
+    const outputs: TransactionOutput[] = tx.vout.map((vout) => ({
+      n: vout.n,
+      value: vout.value,
+      address: vout.scriptPubKey.address,
+      scriptType: vout.scriptPubKey.type,
+    }));
+
+    const totalOutput = tx.vout.reduce((sum, vout) => sum + vout.value, 0);
+    const fee = inputs[0]?.isCoinbase ? 0 : totalInput - totalOutput;
+
+    return {
+      txid: tx.txid,
+      hash: tx.hash,
+      blockHeight: block.height,
+      blockHash: block.hash,
+      time: block.time,
+      size: tx.size,
+      vsize: tx.vsize,
+      weight: tx.weight,
+      inputs,
+      outputs,
+      totalInput,
+      totalOutput,
+      fee,
+    };
   },
 };
