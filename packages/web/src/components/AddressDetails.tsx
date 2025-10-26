@@ -3,14 +3,12 @@ import {
   ArrowDownLeft,
   ArrowLeft,
   ArrowUpRight,
-  Check,
   Coins,
-  Copy,
   Wallet,
 } from 'lucide-react';
-import { useState } from 'react';
 
 import { api } from '../lib/api';
+import { CopyableAddress } from './CopyableAddress';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
@@ -24,7 +22,6 @@ function formatDate(timestamp: number): string {
 }
 
 export function AddressDetails({ address, onBack }: AddressDetailsProps) {
-  const [copied, setCopied] = useState(false);
   const {
     data: result,
     isLoading,
@@ -34,12 +31,6 @@ export function AddressDetails({ address, onBack }: AddressDetailsProps) {
     queryFn: () => api.getAddressBalance(address),
     enabled: !!address,
   });
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(address);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   if (isLoading) {
     return (
@@ -97,27 +88,15 @@ export function AddressDetails({ address, onBack }: AddressDetailsProps) {
         <CardContent>
           <div className="space-y-4">
             <div className="border rounded-lg p-4 bg-accent/50">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Wallet className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Address</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopy}
-                  className="h-8"
-                >
-                  {copied ? (
-                    <Check className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
+              <div className="flex items-center gap-2 mb-2">
+                <Wallet className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Address</span>
               </div>
-              <code className="text-xs bg-background px-2 py-1 rounded font-mono block break-all">
-                {result.address}
-              </code>
+              <CopyableAddress
+                address={result.address}
+                truncate={false}
+                className="text-xs"
+              />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">

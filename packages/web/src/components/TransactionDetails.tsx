@@ -3,16 +3,14 @@ import {
   ArrowDownLeft,
   ArrowLeft,
   ArrowUpRight,
-  Check,
   Clock,
   Coins,
-  Copy,
   Database,
   Hash,
 } from 'lucide-react';
-import { useState } from 'react';
 
 import { api } from '../lib/api';
+import { CopyableAddress } from './CopyableAddress';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -23,7 +21,6 @@ interface TransactionDetailsProps {
 }
 
 export function TransactionDetails({ txid, onBack }: TransactionDetailsProps) {
-  const [copied, setCopied] = useState(false);
   const {
     data: tx,
     isLoading,
@@ -33,12 +30,6 @@ export function TransactionDetails({ txid, onBack }: TransactionDetailsProps) {
     queryFn: () => api.getTransaction(txid),
     enabled: !!txid,
   });
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(txid);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   if (isLoading) {
     return (
@@ -102,27 +93,15 @@ export function TransactionDetails({ txid, onBack }: TransactionDetailsProps) {
         <CardContent>
           <div className="space-y-4">
             <div className="border rounded-lg p-4 bg-accent/50">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Hash className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Transaction ID</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopy}
-                  className="h-8"
-                >
-                  {copied ? (
-                    <Check className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
+              <div className="flex items-center gap-2 mb-2">
+                <Hash className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Transaction ID</span>
               </div>
-              <code className="text-xs bg-background px-2 py-1 rounded font-mono block break-all">
-                {tx.txid}
-              </code>
+              <CopyableAddress
+                address={tx.txid}
+                truncate={false}
+                className="text-xs"
+              />
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
@@ -174,13 +153,15 @@ export function TransactionDetails({ txid, onBack }: TransactionDetailsProps) {
                         key={`${input.txid}-${input.vout}-${idx}`}
                         className="border-b pb-2 last:border-0"
                       >
-                        <div className="flex items-center justify-between mb-1">
-                          <code className="text-xs font-mono text-muted-foreground">
-                            {input.address
-                              ? `${input.address.slice(0, 12)}...${input.address.slice(-12)}`
-                              : 'Unknown'}
-                          </code>
-                          <span className="text-xs font-semibold">
+                        <div className="flex items-center justify-between mb-1 gap-2">
+                          {input.address ? (
+                            <CopyableAddress address={input.address} />
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              Unknown
+                            </span>
+                          )}
+                          <span className="text-xs font-semibold whitespace-nowrap">
                             {input.value?.toFixed(8) || '?'} BTC
                           </span>
                         </div>
@@ -205,13 +186,15 @@ export function TransactionDetails({ txid, onBack }: TransactionDetailsProps) {
                 <div className="space-y-2">
                   {tx.outputs.map((output) => (
                     <div key={output.n} className="border-b pb-2 last:border-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <code className="text-xs font-mono text-muted-foreground">
-                          {output.address
-                            ? `${output.address.slice(0, 12)}...${output.address.slice(-12)}`
-                            : `${output.scriptType} (no address)`}
-                        </code>
-                        <span className="text-xs font-semibold">
+                      <div className="flex items-center justify-between mb-1 gap-2">
+                        {output.address ? (
+                          <CopyableAddress address={output.address} />
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            {output.scriptType}
+                          </span>
+                        )}
+                        <span className="text-xs font-semibold whitespace-nowrap">
                           {output.value.toFixed(8)} BTC
                         </span>
                       </div>

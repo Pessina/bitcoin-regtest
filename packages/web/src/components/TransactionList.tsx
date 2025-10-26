@@ -1,28 +1,24 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import {
   ArrowDownLeft,
-  ArrowLeftRight,
   ArrowUpRight,
   ChevronDown,
   Clock,
   Coins,
-  Database,
   Filter,
   Hash,
+  Layers,
   Loader2,
   Package,
+  Zap,
 } from 'lucide-react';
 import { useState } from 'react';
 
 import { api, type RecentTransaction } from '../lib/api';
+import { CopyableAddress } from './CopyableAddress';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-
-function formatAddress(address: string | undefined): string {
-  if (!address) return 'Unknown';
-  return `${address.slice(0, 8)}...${address.slice(-8)}`;
-}
 
 type TransactionFilter = 'all' | 'hide-rewards' | 'only-rewards';
 
@@ -158,136 +154,141 @@ export function TransactionList() {
           <div className="space-y-4">
             {filteredTransactions?.map((tx: RecentTransaction) => {
               const time = Number(tx.time);
-              const size = Number(tx.size);
               const vsize = Number(tx.vsize);
               const totalOutput = Number(tx.totalOutput);
               const fee = Number(tx.fee);
               const isCoinbase = tx.inputs[0]?.isCoinbase;
 
               return (
-                <div key={tx.txid} className="border rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-3">
+                <div
+                  key={tx.txid}
+                  className="border rounded-lg p-3 hover:border-primary/50 transition-colors"
+                >
+                  <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <ArrowLeftRight className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-semibold text-sm">
-                        {isCoinbase ? 'Coinbase Transaction' : 'Transaction'}
-                      </span>
+                      {isCoinbase ? (
+                        <Zap className="h-4 w-4 text-amber-500" />
+                      ) : (
+                        <Layers className="h-4 w-4 text-blue-500" />
+                      )}
                       {isCoinbase && (
                         <Badge variant="secondary" className="text-xs">
                           Mining Reward
                         </Badge>
                       )}
+                      <span className="text-xs text-muted-foreground">
+                        #{tx.blockHeight}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      {new Date(time * 1000).toLocaleString()}
+                      {new Date(time * 1000).toLocaleTimeString()}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 text-sm mb-3">
+                  <div className="flex items-center gap-2 mb-3">
                     <Hash className="h-3 w-3 text-muted-foreground" />
-                    <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
-                      {tx.txid.slice(0, 16)}...{tx.txid.slice(-16)}
-                    </code>
+                    <CopyableAddress
+                      address={tx.txid}
+                      className="flex-1"
+                      truncate={true}
+                    />
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-4 mb-3">
-                    <div className="border rounded-lg p-3 bg-background">
-                      <div className="flex items-center gap-2 mb-2">
-                        <ArrowUpRight className="h-4 w-4 text-orange-500" />
-                        <span className="text-xs font-medium text-muted-foreground">
-                          From ({tx.inputs.length})
+                  <div className="grid md:grid-cols-2 gap-3 mb-2">
+                    <div className="border rounded p-2 bg-muted/30">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <ArrowUpRight className="h-3.5 w-3.5 text-orange-500" />
+                        <span className="text-xs font-medium">
+                          Inputs ({tx.inputs.length})
                         </span>
                       </div>
                       <div className="space-y-1">
                         {isCoinbase ? (
-                          <div className="text-sm">
-                            <span className="text-muted-foreground">
-                              Newly Generated Coins
-                            </span>
+                          <div className="text-xs text-muted-foreground italic">
+                            Coinbase (New Coins)
                           </div>
                         ) : (
-                          tx.inputs.slice(0, 3).map((input, idx) => (
+                          tx.inputs.slice(0, 2).map((input, idx) => (
                             <div
                               key={`${input.txid}-${input.vout}-${idx}`}
-                              className="text-sm"
+                              className="flex items-center justify-between gap-2"
                             >
-                              <div className="flex items-center justify-between">
-                                <code className="text-xs font-mono text-muted-foreground">
-                                  {formatAddress(input.address)}
-                                </code>
-                                <span className="text-xs font-semibold">
-                                  {input.value?.toFixed(8) || '?'} BTC
+                              {input.address ? (
+                                <CopyableAddress
+                                  address={input.address}
+                                  className="flex-1"
+                                />
+                              ) : (
+                                <span className="text-xs text-muted-foreground">
+                                  Unknown
                                 </span>
-                              </div>
+                              )}
+                              <span className="text-xs font-semibold whitespace-nowrap">
+                                {input.value?.toFixed(4) || '?'} BTC
+                              </span>
                             </div>
                           ))
                         )}
-                        {!isCoinbase && tx.inputs.length > 3 && (
-                          <div className="text-xs text-muted-foreground pt-1">
-                            +{tx.inputs.length - 3} more input
-                            {tx.inputs.length - 3 !== 1 ? 's' : ''}
+                        {!isCoinbase && tx.inputs.length > 2 && (
+                          <div className="text-xs text-muted-foreground">
+                            +{tx.inputs.length - 2} more
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="border rounded-lg p-3 bg-background">
-                      <div className="flex items-center gap-2 mb-2">
-                        <ArrowDownLeft className="h-4 w-4 text-green-500" />
-                        <span className="text-xs font-medium text-muted-foreground">
-                          To ({tx.outputs.length})
+                    <div className="border rounded p-2 bg-muted/30">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <ArrowDownLeft className="h-3.5 w-3.5 text-green-500" />
+                        <span className="text-xs font-medium">
+                          Outputs ({tx.outputs.length})
                         </span>
                       </div>
                       <div className="space-y-1">
-                        {tx.outputs.slice(0, 3).map((output) => (
-                          <div key={`${output.n}`} className="text-sm">
-                            <div className="flex items-center justify-between">
-                              <code className="text-xs font-mono text-muted-foreground">
-                                {formatAddress(output.address)}
-                              </code>
-                              <span className="text-xs font-semibold">
-                                {output.value.toFixed(8)} BTC
+                        {tx.outputs.slice(0, 2).map((output) => (
+                          <div
+                            key={output.n}
+                            className="flex items-center justify-between gap-2"
+                          >
+                            {output.address ? (
+                              <CopyableAddress
+                                address={output.address}
+                                className="flex-1"
+                              />
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                {output.scriptType}
                               </span>
-                            </div>
+                            )}
+                            <span className="text-xs font-semibold whitespace-nowrap">
+                              {output.value.toFixed(4)} BTC
+                            </span>
                           </div>
                         ))}
-                        {tx.outputs.length > 3 && (
-                          <div className="text-xs text-muted-foreground pt-1">
-                            +{tx.outputs.length - 3} more output
-                            {tx.outputs.length - 3 !== 1 ? 's' : ''}
+                        {tx.outputs.length > 2 && (
+                          <div className="text-xs text-muted-foreground">
+                            +{tx.outputs.length - 2} more
                           </div>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 text-sm mb-2">
-                    <Database className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">
-                      Block #{tx.blockHeight}
-                    </span>
-                  </div>
-
-                  <div className="mt-3 flex gap-4 text-sm text-muted-foreground border-t pt-2">
-                    <div className="flex items-center gap-1">
-                      <Coins className="h-3 w-3" />
-                      <span className="text-xs">
-                        Total: {totalOutput.toFixed(8)} BTC
-                      </span>
-                    </div>
-                    {!isCoinbase && (
+                  <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-2">
+                    <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1">
-                        <span className="text-xs">
-                          Fee: {fee.toFixed(8)} BTC
-                        </span>
+                        <Coins className="h-3 w-3" />
+                        <span>{totalOutput.toFixed(4)} BTC</span>
                       </div>
-                    )}
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs">
-                        {size} bytes ({vsize} vB)
-                      </span>
+                      {!isCoinbase && fee > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Zap className="h-3 w-3" />
+                          <span>{fee.toFixed(6)} fee</span>
+                        </div>
+                      )}
                     </div>
+                    <span className="text-muted-foreground/70">{vsize} vB</span>
                   </div>
                 </div>
               );
