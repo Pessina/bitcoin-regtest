@@ -1,5 +1,11 @@
-const API_BASE_URL =
-  (import.meta.env.VITE_API_URL as string) || 'http://localhost:3001';
+/**
+ * Bitcoin RPC client for browser
+ * Calls bitcoind RPC directly via Vite proxy
+ */
+
+const RPC_URL = '/rpc';
+const RPC_USER = 'test';
+const RPC_PASSWORD = 'test123';
 
 export interface Block {
   height: number;
@@ -81,32 +87,140 @@ export interface BlockchainInfo {
   size_on_disk: number;
 }
 
+/**
+ * Call Bitcoin RPC method
+ */
+async function rpc<T>(method: string, params: unknown[] = []): Promise<T> {
+  const response = await fetch(RPC_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Basic ' + btoa(`${RPC_USER}:${RPC_PASSWORD}`),
+    },
+    body: JSON.stringify({
+      jsonrpc: '1.0',
+      id: 'browser',
+      method,
+      params,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`RPC error: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+
+  if (data.error) {
+    throw new Error(`Bitcoin RPC error: ${data.error.message}`);
+  }
+
+  return data.result;
+}
+
 export const api = {
   async getLatestBlocks(limit = 10): Promise<Block[]> {
-    const response = await fetch(
-      `${API_BASE_URL}/api/blocks/latest?limit=${limit}`
-    );
-    if (!response.ok) throw new Error('Failed to fetch latest blocks');
-    return response.json() as Promise<Block[]>;
+    const blockCount = await rpc<number>('getblockcount');
+    const blocks: Block[] = [];
+
+    for (let i = 0; i < limit && blockCount - i >= 0; i++) {
+      const blockHash = await rpc<string>('getblockhash', [blockCount - i]);
+      const block = await rpc<{
+        height: number;
+        hash: string;
+        time: number;
+        size: number;
+        difficulty: number;
+        tx: string[];
+      }>('getblock', [blockHash, 2]);
+
+      blocks.push({
+        height: block.height,
+        hash: block.hash,
+        time: block.time,
+        size: block.size,
+        txCount: block.tx?.length || 0,
+        difficulty: block.difficulty,
+      });
+    }
+
+    return blocks;
   },
 
   async getBlock(heightOrHash: string | number): Promise<BlockDetail> {
-    const response = await fetch(`${API_BASE_URL}/api/blocks/${heightOrHash}`);
-    if (!response.ok) throw new Error('Failed to fetch block');
-    return response.json() as Promise<BlockDetail>;
+    let blockHash: string;
+
+    if (typeof heightOrHash === 'number' || /^\d+$/.test(heightOrHash)) {
+      blockHash = await rpc<string>('getblockhash', [Number(heightOrHash)]);
+    } else {
+      blockHash = heightOrHash;
+    }
+
+    const block = await rpc<{
+      height: number;
+      hash: string;
+      time: number;
+      size: number;
+      weight: number;
+      version: number;
+      merkleroot: string;
+      nonce: number;
+      bits: string;
+      difficulty: number;
+      previousblockhash?: string;
+      nextblockhash?: string;
+      tx: Transaction[];
+    }>('getblock', [blockHash, 2]);
+
+    return {
+      height: block.height,
+      hash: block.hash,
+      time: block.time,
+      size: block.size,
+      weight: block.weight,
+      version: block.version,
+      merkleroot: block.merkleroot,
+      nonce: block.nonce,
+      bits: block.bits,
+      difficulty: block.difficulty,
+      previousblockhash: block.previousblockhash,
+      nextblockhash: block.nextblockhash,
+      transactions: block.tx || [],
+      txCount: block.tx?.length || 0,
+    };
   },
 
   async getAddressBalance(address: string): Promise<AddressBalance> {
-    const response = await fetch(
-      `${API_BASE_URL}/api/address/${address}/balance`
-    );
-    if (!response.ok) throw new Error('Failed to fetch address balance');
-    return response.json() as Promise<AddressBalance>;
+    const utxos = await rpc<{
+      total_amount: number;
+      unspents: UTXO[];
+    }>('scantxoutset', ['start', [`addr(${address})`]]);
+
+    return {
+      address,
+      balance: utxos.total_amount || 0,
+      utxoCount: utxos.unspents?.length || 0,
+      utxos: utxos.unspents || [],
+    };
   },
 
   async getBlockchainInfo(): Promise<BlockchainInfo> {
-    const response = await fetch(`${API_BASE_URL}/api/blockchain/info`);
-    if (!response.ok) throw new Error('Failed to fetch blockchain info');
-    return response.json() as Promise<BlockchainInfo>;
+    const info = await rpc<{
+      chain: string;
+      blocks: number;
+      bestblockhash: string;
+      difficulty: number;
+      mediantime: number;
+      size_on_disk: number;
+    }>('getblockchaininfo');
+
+    return {
+      chain: info.chain,
+      blocks: info.blocks,
+      bestblockhash: info.bestblockhash,
+      difficulty: info.difficulty,
+      mediantime: info.mediantime,
+      size_on_disk: info.size_on_disk,
+    };
   },
 };

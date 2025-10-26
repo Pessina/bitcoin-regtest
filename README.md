@@ -1,210 +1,271 @@
-# bitcoin-regtest
+# Bitcoin Regtest Environment
 
-[![npm version](https://img.shields.io/npm/v/bitcoin-regtest.svg)](https://www.npmjs.com/package/bitcoin-regtest)
+Zero-config Bitcoin regtest with auto-mining and web explorer for local development and testing.
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-Zero-config Bitcoin regtest environment with auto-mining for local development and testing.
+## Summary
+
+A single-container Bitcoin regtest environment that just works. Perfect for:
+- 🧪 Integration testing Bitcoin applications
+- 🛠️ Local development without running bitcoind manually
+- 🎓 Learning Bitcoin development
+- 🔬 Experimenting with Bitcoin transactions
+
+**Features:**
+- ⚡ Auto-mining every 10 seconds
+- 🌐 Web explorer UI
+- 🐳 Single Docker command deployment
+- 📦 Programmatic API for testing
+- 🔧 Zero configuration needed
 
 ## Installation
 
-```bash
-npm install bitcoin-regtest
-# or
-yarn add bitcoin-regtest
-```
-
-**Prerequisites:** Bitcoin Core must be installed on your system.
+### Docker (Recommended)
 
 ```bash
-# macOS
-brew install bitcoin
+# Clone the repository
+git clone https://github.com/Pessina/bitcoin-regtest.git
+cd bitcoin-regtest
 
-# Ubuntu/Debian
-sudo apt-get install bitcoind
+# Build and run in one command
+yarn docker:dev
+
+# View logs
+yarn docker:logs
 ```
 
-## Quick Start
+**Access:**
+- **Web UI:** http://localhost:5173
+- **Bitcoin RPC:** localhost:18443
 
-### CLI
+### Local Development
+
+**Prerequisites:**
+- Node.js >= 22.0
+- Yarn >= 1.22
+- Bitcoin Core >= 30.0 ([install](https://bitcoin.org/en/download))
 
 ```bash
-npx bitcoin-regtest
+# Install dependencies
+yarn install
+
+# Build packages
+yarn build
+
+# Start the server
+yarn start
 ```
 
-Starts bitcoind in regtest mode, creates a wallet, mines 101 initial blocks, and auto-mines every 10 seconds.
+## How to Run
 
-### Programmatic Usage
+### Docker Commands
 
-```typescript
-import { BitcoinRegtestManager } from 'bitcoin-regtest';
+```bash
+# Build and run (handles cleanup automatically)
+yarn docker:dev
 
-const manager = new BitcoinRegtestManager();
-await manager.start();
-
-// Get wallet address and balance
-const address = await manager.getWalletAddress();
-const balance = await manager.getBalance();
-
-// Fund an address
-await manager.fundAddress('bcrt1q...', 10);
-
-// Mine blocks
-await manager.mineBlocks(6);
-
-// Cleanup
-await manager.shutdown();
+# Or step by step:
+yarn docker:build        # Build image
+yarn docker:run          # Run container
+yarn docker:logs         # View logs
+yarn docker:stop         # Stop container
+yarn docker:clean        # Remove everything
 ```
 
-### Custom Configuration
+### Local Development Commands
 
-All options are optional with sensible defaults:
+```bash
+yarn build               # Build all packages
+yarn build:watch         # Build in watch mode
+yarn start               # Start server
+yarn clean               # Clean build artifacts
 
-```typescript
-const manager = new BitcoinRegtestManager({
-  rpcPort: 18443,
-  rpcHost: 'localhost',
-  rpcUser: 'test',
-  rpcPassword: 'test123',
-  autoMineIntervalMs: 10000,
-  autoMineInitialBlocks: 101
-});
-
-await manager.start();
-```
-
-### Integration Testing
-
-```typescript
-import { BitcoinRegtestManager } from 'bitcoin-regtest';
-import { describe, it, before, after } from 'mocha';
-
-describe('Bitcoin Integration Tests', () => {
-  let regtest: BitcoinRegtestManager;
-
-  before(async () => {
-    regtest = new BitcoinRegtestManager();
-    await regtest.start();
-  });
-
-  after(async () => {
-    await regtest.shutdown();
-  });
-
-  it('should fund address', async () => {
-    await regtest.fundAddress('bcrt1q...', 5);
-    const height = await regtest.getBlockCount();
-    expect(height).to.be.greaterThan(101);
-  });
-});
+# Code quality
+yarn lint                # Lint code
+yarn lint:fix            # Fix linting issues
+yarn format              # Format code
+yarn type-check          # Type checking
 ```
 
 ## API Reference
 
-### Constructor
+### BitcoinRegtestManager
+
+The core class for managing the Bitcoin regtest environment.
 
 ```typescript
-new BitcoinRegtestManager(config?: PartialBitcoinRegtestConfig)
+import { BitcoinRegtestManager } from '@bitcoin-regtest/server';
+
+const manager = new BitcoinRegtestManager(config?);
 ```
 
-Creates a new manager instance. All configuration options are optional.
+#### Configuration Options
 
-**Configuration Options:**
-- `rpcHost`: string (default: `'localhost'`)
-- `rpcPort`: number (default: `18443`)
-- `rpcUser`: string (default: `'test'`)
-- `rpcPassword`: string (default: `'test123'`)
-- `autoMineInitialBlocks`: number (default: `101`)
-- `autoMineIntervalMs`: number (default: `10000`)
+```typescript
+interface BitcoinRegtestConfig {
+  rpcHost?: string;              // default: 'localhost'
+  rpcPort?: number;              // default: 18443
+  rpcUser?: string;              // default: 'test'
+  rpcPassword?: string;          // default: 'test123'
+  network?: string;              // default: 'regtest'
+  autoMineInitialBlocks?: number; // default: 101
+  autoMineIntervalMs?: number;    // default: 10000
+}
+```
 
-### Methods
+#### Methods
 
-#### `start(): Promise<void>`
+**`async start(): Promise<void>`**
+- Starts bitcoind and begins auto-mining
+- Initializes wallet and mines initial blocks
 
-Starts bitcoind, creates wallet, mines initial blocks, and enables auto-mining.
+**`async shutdown(): Promise<void>`**
+- Stops bitcoind gracefully
+- Stops auto-mining
 
-#### `shutdown(): Promise<void>`
+**`getWalletAddress(): string`**
+- Returns the default wallet address
+- Available after `start()` completes
 
-Stops auto-mining and bitcoind daemon.
+**`async mineBlocks(count: number): Promise<void>`**
+- Mines specified number of blocks
+- Useful for testing confirmations
 
-#### `getWalletAddress(): Promise<string>`
+**`async fundAddress(address: string, amount: number): Promise<string>`**
+- Sends BTC to an address and mines 1 confirmation block
+- Returns transaction ID
+- Amount in BTC (e.g., 1.5 for 1.5 BTC)
 
-Returns the regtest wallet's Bitcoin address.
+**`getClient(): BitcoinClient`**
+- Returns the Bitcoin Core RPC client
+- Access full Bitcoin Core API
+- See [bitcoin-core docs](https://github.com/ruimarinho/bitcoin-core)
 
-#### `getBalance(): Promise<number>`
+## Example
 
-Returns wallet balance in BTC.
+### Integration Testing
 
-#### `mineBlocks(count: number, address?: string): Promise<string[]>`
+```typescript
+import { BitcoinRegtestManager } from '@bitcoin-regtest/server';
+import { describe, beforeAll, afterAll, it, expect } from '@jest/globals';
 
-Mines blocks. Returns array of block hashes.
+describe('Bitcoin Integration Tests', () => {
+  let manager: BitcoinRegtestManager;
 
-**Parameters:**
-- `count`: Number of blocks to mine
-- `address`: Optional address for mining rewards (defaults to wallet address)
+  beforeAll(async () => {
+    manager = new BitcoinRegtestManager();
+    await manager.start();
+  });
 
-#### `fundAddress(address: string, amount: number): Promise<string>`
+  afterAll(async () => {
+    await manager.shutdown();
+  });
 
-Sends BTC to an address and mines 1 confirmation block.
+  it('should fund address and confirm transaction', async () => {
+    const address = 'bcrt1q...';
 
-**Parameters:**
-- `address`: Recipient Bitcoin address
-- `amount`: Amount in BTC
+    // Fund address (automatically mines 1 block for confirmation)
+    const txid = await manager.fundAddress(address, 1.5);
 
-**Returns:** Transaction ID
+    // Verify transaction
+    const client = manager.getClient();
+    const tx = await client.getTransaction(txid);
 
-#### `getBlockCount(): Promise<number>`
+    expect(tx.confirmations).toBeGreaterThan(0);
+  });
 
-Returns current blockchain height.
+  it('should mine blocks on demand', async () => {
+    const client = manager.getClient();
+    const initialHeight = await client.getBlockCount();
 
-#### `getTransaction(txid: string): Promise<any>`
+    await manager.mineBlocks(5);
 
-Returns transaction details.
+    const newHeight = await client.getBlockCount();
+    expect(newHeight).toBe(initialHeight + 5);
+  });
+});
+```
 
-#### `listTransactions(count?: number): Promise<any[]>`
+### Standalone Script
 
-Lists recent wallet transactions.
+```typescript
+import { BitcoinRegtestManager } from '@bitcoin-regtest/server';
 
-**Parameters:**
-- `count`: Number of transactions (default: 10)
+async function main() {
+  const manager = new BitcoinRegtestManager();
 
-#### `getClient(): Client`
+  try {
+    // Start environment
+    await manager.start();
+    console.log('Bitcoin regtest started!');
 
-Returns raw `bitcoin-core` RPC client for advanced operations. See [bitcoin-core npm package](https://www.npmjs.com/package/bitcoin-core) for full RPC API.
+    // Get wallet address
+    const address = manager.getWalletAddress();
+    console.log('Wallet address:', address);
 
-## Default Configuration
+    // Access Bitcoin Core RPC client
+    const client = manager.getClient();
+    const blockCount = await client.getBlockCount();
+    console.log('Current block height:', blockCount);
 
-| Setting                | Value       | Description                     |
-| ---------------------- | ----------- | ------------------------------- |
-| RPC Host               | `localhost` | Bitcoin RPC server host         |
-| RPC Port               | `18443`     | Standard regtest port           |
-| RPC User               | `test`      | RPC authentication username     |
-| RPC Password           | `test123`   | RPC authentication password     |
-| Initial Blocks         | `101`       | Mined at startup                |
-| Auto-mine Interval     | `10000ms`   | Mines 1 block every 10 seconds  |
+    // Mine some blocks
+    await manager.mineBlocks(10);
+    console.log('Mined 10 blocks');
 
-**Why 101 blocks?** Bitcoin requires 100 confirmations before coinbase rewards can be spent.
+    // Get balance
+    const balance = await client.getBalance();
+    console.log('Balance:', balance, 'BTC');
+
+  } finally {
+    await manager.shutdown();
+  }
+}
+
+main();
+```
+
+## Architecture
+
+```
+┌─────────────────────┐
+│   Web Browser       │
+│   localhost:5173    │
+└──────────┬──────────┘
+           │ HTTP + /rpc proxy
+           ↓
+      ┌────────────────────┐
+      │  Static Server     │
+      │  - Serves web UI   │
+      │  - Proxies /rpc    │
+      └─────────┬──────────┘
+                │
+           ┌────▼─────┐
+           │ bitcoind │
+           │ :18443   │
+           └────▲─────┘
+                │
+        ┌───────┴───────────┐
+        │ BitcoinRegtest    │
+        │ Manager           │
+        └───────────────────┘
+```
+
+**Single container in Docker** - All components run together.
 
 ## Troubleshooting
 
-### "bitcoind not found"
+### Port already in use
 
 ```bash
-# macOS
-brew install bitcoin
-
-# Ubuntu/Debian
-sudo apt-get install bitcoind
-```
-
-### "Address already in use" (port 18443)
-
-```bash
-pkill bitcoind
-# or
+# Stop bitcoind
 bitcoin-cli -regtest stop
+
+# Or kill process
+pkill bitcoind
 ```
 
-### Wallet errors
+### Reset blockchain data
 
 ```bash
 # macOS
@@ -212,17 +273,21 @@ rm -rf ~/Library/Application\ Support/Bitcoin/regtest
 
 # Linux
 rm -rf ~/.bitcoin/regtest
+
+# Docker
+yarn docker:clean
 ```
 
-## Requirements
+## Contributing
 
-- Node.js >= 18.0.0
-- Bitcoin Core
+Contributions welcome! Please submit a Pull Request.
 
 ## License
 
 MIT
 
-## Repository
+## Links
 
-[https://github.com/Pessina/bitcoin-regtest](https://github.com/Pessina/bitcoin-regtest)
+- [GitHub Repository](https://github.com/Pessina/bitcoin-regtest)
+- [Bitcoin Core RPC API](https://github.com/ruimarinho/bitcoin-core)
+- [Bitcoin Core Documentation](https://bitcoin.org/en/bitcoin-core/)

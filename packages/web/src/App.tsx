@@ -5,7 +5,16 @@ import { AddressSearch } from './components/AddressSearch';
 import { BlockchainStats } from './components/BlockchainStats';
 import { BlockList } from './components/BlockList';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000,
+      gcTime: 5 * 60 * 1000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
   return (

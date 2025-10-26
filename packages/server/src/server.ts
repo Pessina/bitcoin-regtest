@@ -1,188 +1,285 @@
-import express from 'express';
-import cors from 'cors';
+/**
+ * Server module for managing Bitcoin regtest environment and web UI
+ * Development: Spawns Vite dev server
+ * Production: Serves static files from built web UI
+ */
+
 import { spawn, ChildProcess } from 'child_process';
+import {
+  createServer,
+  IncomingMessage,
+  ServerResponse,
+  request as httpRequest,
+} from 'http';
+import { createReadStream, existsSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { dirname, join, extname } from 'path';
+
 import { BitcoinRegtestManager } from './BitcoinRegtestManager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const app = express();
-const PORT = process.env.PORT || 3001;
-
-app.use(cors());
-app.use(express.json());
-
 let manager: BitcoinRegtestManager | null = null;
 let webProcess: ChildProcess | null = null;
+let staticServer: ReturnType<typeof createServer> | null = null;
 
-async function initBitcoinRegtest() {
-  manager = new BitcoinRegtestManager();
-  await manager.start();
-  console.log('Bitcoin regtest started');
+const MIME_TYPES: Record<string, string> = {
+  '.html': 'text/html',
+  '.js': 'application/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.eot': 'application/vnd.ms-fontobject',
+};
+
+function printBanner() {
+  const banner = `
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║         🪙  Bitcoin Regtest Environment - Ready! 🪙          ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+`;
+  console.log(banner);
 }
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+function printServiceInfo() {
+  const isDocker = process.env.DOCKER_CONTAINER === 'true';
+  const hostname = isDocker ? process.env.HOSTNAME || 'localhost' : 'localhost';
 
-app.get('/api/blocks/latest', async (req, res) => {
-  try {
-    if (!manager) {
-      return res.status(503).json({ error: 'Bitcoin regtest not initialized' });
-    }
+  console.log('\n📡 Services Available:\n');
+  console.log(`   🌐 Web UI:        http://${hostname}:5173`);
+  console.log(`   ⚡ Bitcoin RPC:   http://${hostname}:18443`);
 
-    const client = manager.getClient();
-    const blockCount = await client.getBlockCount();
-    const limit = Math.min(Number(req.query.limit) || 10, 50);
+  console.log('\n🔑 RPC Credentials:\n');
+  console.log('   Username:  test');
+  console.log('   Password:  test123');
 
-    const blocks = [];
-    for (let i = 0; i < limit && blockCount - i >= 0; i++) {
-      const blockHash = await client.getBlockHash(blockCount - i);
-      const block = await client.getBlock(blockHash, 2);
-      blocks.push({
-        height: block.height,
-        hash: block.hash,
-        time: block.time,
-        size: block.size,
-        txCount: block.tx?.length || 0,
-        difficulty: block.difficulty,
-      });
-    }
-
-    res.json(blocks);
-  } catch (error) {
-    console.error('Error fetching latest blocks:', error);
-    res.status(500).json({ error: 'Failed to fetch blocks' });
+  if (manager) {
+    const address = manager.getWalletAddress();
+    console.log('\n💰 Wallet Info:\n');
+    console.log(`   Address:   ${address}`);
+    console.log('   Network:   regtest');
+    console.log('   Auto-mine: Every 10 seconds');
   }
-});
 
-app.get('/api/blocks/:heightOrHash', async (req, res) => {
-  try {
-    if (!manager) {
-      return res.status(503).json({ error: 'Bitcoin regtest not initialized' });
-    }
+  console.log('\n📚 Useful Commands:\n');
+  console.log('   # View logs');
+  if (isDocker) {
+    console.log('   docker logs -f bitcoin-regtest\n');
+    console.log('   # Access RPC from host');
+    console.log(
+      `   bitcoin-cli -regtest -rpcuser=test -rpcpassword=test123 -rpcconnect=${hostname} getblockchaininfo\n`
+    );
+    console.log('   # Stop container');
+    console.log('   docker-compose down\n');
+  } else {
+    console.log('   bitcoin-cli -regtest getblockchaininfo');
+    console.log('   bitcoin-cli -regtest getbalance');
+    console.log('   bitcoin-cli -regtest getnewaddress\n');
+  }
 
-    const client = manager.getClient();
-    const { heightOrHash } = req.params;
+  console.log('📖 Documentation: https://github.com/Pessina/bitcoin-regtest\n');
+  console.log(
+    '═══════════════════════════════════════════════════════════════\n'
+  );
+}
 
-    let blockHash: string;
-    if (/^\d+$/.test(heightOrHash)) {
-      blockHash = await client.getBlockHash(Number(heightOrHash));
-    } else {
-      blockHash = heightOrHash;
-    }
+async function initBitcoinRegtest() {
+  console.log('🚀 Initializing Bitcoin Regtest environment...\n');
+  manager = new BitcoinRegtestManager();
+  await manager.start();
+  console.log('\n✅ Bitcoin regtest initialized!');
+}
 
-    const block = await client.getBlock(blockHash, 2);
+function proxyRpcRequest(req: IncomingMessage, res: ServerResponse) {
+  let body = '';
 
-    res.json({
-      height: block.height,
-      hash: block.hash,
-      time: block.time,
-      size: block.size,
-      weight: block.weight,
-      version: block.version,
-      merkleroot: block.merkleroot,
-      nonce: block.nonce,
-      bits: block.bits,
-      difficulty: block.difficulty,
-      previousblockhash: block.previousblockhash,
-      nextblockhash: block.nextblockhash,
-      transactions: block.tx || [],
+  req.on('data', (chunk) => {
+    body += chunk.toString();
+  });
+
+  req.on('end', () => {
+    const auth = Buffer.from('test:test123').toString('base64');
+
+    const proxyReq = httpRequest(
+      {
+        hostname: 'localhost',
+        port: 18443,
+        path: '/',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(body),
+          Authorization: `Basic ${auth}`,
+        },
+      },
+      (proxyRes) => {
+        res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
+        proxyRes.pipe(res);
+      }
+    );
+
+    proxyReq.on('error', (error) => {
+      console.error('RPC proxy error:', error);
+      res.writeHead(502, { 'Content-Type': 'text/plain' });
+      res.end('Bad Gateway: Unable to connect to Bitcoin RPC');
     });
-  } catch (error) {
-    console.error('Error fetching block:', error);
-    res.status(404).json({ error: 'Block not found' });
-  }
-});
 
-app.get('/api/address/:address/balance', async (req, res) => {
-  try {
-    if (!manager) {
-      return res.status(503).json({ error: 'Bitcoin regtest not initialized' });
+    proxyReq.write(body);
+    proxyReq.end();
+  });
+
+  req.on('error', (error) => {
+    console.error('Request error:', error);
+    res.writeHead(400, { 'Content-Type': 'text/plain' });
+    res.end('Bad Request');
+  });
+}
+
+function serveStaticFile(
+  _req: IncomingMessage,
+  res: ServerResponse,
+  filePath: string
+) {
+  const ext = extname(filePath);
+  const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+
+  if (!existsSync(filePath)) {
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('404 Not Found');
+    return;
+  }
+
+  const stat = statSync(filePath);
+  if (stat.isDirectory()) {
+    res.writeHead(403, { 'Content-Type': 'text/plain' });
+    res.end('403 Forbidden');
+    return;
+  }
+
+  res.writeHead(200, { 'Content-Type': contentType });
+  createReadStream(filePath).pipe(res);
+}
+
+function startStaticServer() {
+  const webDistPath = join(__dirname, '..', '..', 'web', 'dist');
+  const port = 5173;
+
+  console.log('🌐 Starting static web server...\n');
+
+  if (!existsSync(webDistPath)) {
+    console.error(
+      `❌ Web UI build not found at ${webDistPath}. Run 'yarn build' first.`
+    );
+    return;
+  }
+
+  staticServer = createServer((req, res) => {
+    // Proxy RPC requests to bitcoind
+    if (req.url === '/rpc' && req.method === 'POST') {
+      proxyRpcRequest(req, res);
+      return;
     }
 
-    const client = manager.getClient();
-    const { address } = req.params;
+    // Serve static files
+    let filePath = join(webDistPath, req.url === '/' ? 'index.html' : req.url!);
 
-    const utxos = await client.command('scantxoutset', 'start', [`addr(${address})`]);
-
-    const balance = utxos.total_amount || 0;
-    const utxoCount = utxos.unspents?.length || 0;
-
-    res.json({
-      address,
-      balance,
-      utxoCount,
-      utxos: utxos.unspents || [],
-    });
-  } catch (error) {
-    console.error('Error fetching address balance:', error);
-    res.status(500).json({ error: 'Failed to fetch address balance' });
-  }
-});
-
-app.get('/api/blockchain/info', async (req, res) => {
-  try {
-    if (!manager) {
-      return res.status(503).json({ error: 'Bitcoin regtest not initialized' });
+    // SPA fallback - serve index.html for routes that don't match files
+    if (!existsSync(filePath) || statSync(filePath).isDirectory()) {
+      filePath = join(webDistPath, 'index.html');
     }
 
-    const client = manager.getClient();
-    const info = await client.getBlockchainInfo();
+    serveStaticFile(req, res, filePath);
+  });
 
-    res.json({
-      chain: info.chain,
-      blocks: info.blocks,
-      bestblockhash: info.bestblockhash,
-      difficulty: info.difficulty,
-      mediantime: info.mediantime,
-      size_on_disk: info.size_on_disk,
-    });
-  } catch (error) {
-    console.error('Error fetching blockchain info:', error);
-    res.status(500).json({ error: 'Failed to fetch blockchain info' });
-  }
-});
+  staticServer.listen(port, () => {
+    console.log(`✅ Web UI ready at http://localhost:${port}\n`);
+  });
 
-function startWebUI() {
+  staticServer.on('error', (error) => {
+    console.error('❌ Static server error:', error);
+  });
+}
+
+function startViteDevServer() {
   const webDir = join(__dirname, '..', '..', 'web');
-  console.log('Starting web UI...');
+  console.log('🌐 Starting Vite dev server...\n');
 
   webProcess = spawn('yarn', ['dev'], {
     cwd: webDir,
-    stdio: 'inherit',
+    stdio: 'pipe',
     shell: true,
   });
 
-  webProcess.on('error', (error) => {
-    console.error('Web UI error:', error);
+  webProcess.stdout?.on('data', (data) => {
+    const output = data.toString();
+    // Only log important Vite messages, suppress verbose output
+    if (output.includes('Local:') || output.includes('ready in')) {
+      console.log(output.trim());
+    }
   });
+
+  webProcess.stderr?.on('data', (data) => {
+    console.error(data.toString());
+  });
+
+  webProcess.on('error', (error) => {
+    console.error('❌ Vite dev server error:', error);
+  });
+}
+
+function startWebUI() {
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  if (isProduction) {
+    startStaticServer();
+  } else {
+    startViteDevServer();
+  }
 }
 
 export async function startServer() {
   await initBitcoinRegtest();
-  return new Promise<void>((resolve) => {
-    app.listen(PORT, () => {
-      console.log(`API server running on http://localhost:${PORT}`);
 
-      setTimeout(() => {
-        startWebUI();
-      }, 1000);
+  setTimeout(() => {
+    startWebUI();
 
-      resolve();
-    });
-  });
+    // Give web UI time to start before showing banner
+    setTimeout(() => {
+      printBanner();
+      printServiceInfo();
+    }, 3000);
+  }, 1000);
 }
 
 export async function stopServer() {
+  console.log('\n🛑 Shutting down...\n');
+
+  if (staticServer) {
+    console.log('   Stopping static server...');
+    staticServer.close();
+    staticServer = null;
+  }
+
   if (webProcess) {
-    console.log('Stopping web UI...');
+    console.log('   Stopping Vite dev server...');
     webProcess.kill('SIGTERM');
     webProcess = null;
   }
+
   if (manager) {
     await manager.shutdown();
   }
+
+  console.log('✅ Shutdown complete\n');
 }

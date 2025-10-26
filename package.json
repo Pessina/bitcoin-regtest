@@ -16,7 +16,14 @@
     "lint:fix": "eslint packages/**/src/**/*.{ts,tsx} --fix",
     "format": "prettier --write \"packages/**/*.{ts,tsx,js,json}\"",
     "format:check": "prettier --check \"packages/**/*.{ts,tsx,js,json}\"",
-    "type-check": "yarn workspace @bitcoin-regtest/server run type-check && yarn workspace @bitcoin-regtest/web run type-check"
+    "type-check": "yarn workspace @bitcoin-regtest/server run type-check && yarn workspace @bitcoin-regtest/web run type-check",
+    "docker:build": "docker build -t bitcoin-regtest .",
+    "docker:run": "docker run -d --name bitcoin-regtest -p 5173:5173 -p 18443:18443 bitcoin-regtest",
+    "docker:dev": "docker stop bitcoin-regtest 2>/dev/null || true && docker rm bitcoin-regtest 2>/dev/null || true && yarn docker:build && yarn docker:run",
+    "docker:stop": "docker stop bitcoin-regtest",
+    "docker:remove": "docker rm bitcoin-regtest",
+    "docker:logs": "docker logs -f bitcoin-regtest",
+    "docker:clean": "docker stop bitcoin-regtest && docker rm bitcoin-regtest && docker volume prune -f"
   },
   "keywords": [
     "bitcoin",
@@ -44,13 +51,15 @@
     "bitcoin-core": "^5.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.38.0",
     "@types/node": "^24.9.1",
-    "@typescript-eslint/eslint-plugin": "^8.46.2",
-    "@typescript-eslint/parser": "^8.46.2",
     "eslint": "^9.38.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
     "eslint-plugin-simple-import-sort": "^12.1.1",
+    "globals": "^16.4.0",
     "prettier": "^3.6.2",
     "tsdown": "^0.15.9",
     "tsx": "^4.20.6",
@@ -58,6 +67,7 @@
     "typescript-eslint": "^8.46.2"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0",
+    "yarn": ">=1.22.0"
   }
 }

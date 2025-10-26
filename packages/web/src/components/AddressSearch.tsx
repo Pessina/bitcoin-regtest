@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Coins, Search, Wallet } from 'lucide-react';
 import { useState } from 'react';
 
-import { api, type AddressBalance } from '../lib/api';
+import { type AddressBalance, api } from '../lib/api';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
