@@ -1,13 +1,16 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import {
   ArrowDownLeft,
   ArrowLeftRight,
   ArrowUpRight,
+  ChevronDown,
   Clock,
   Coins,
   Database,
   Filter,
   Hash,
+  Loader2,
+  Package,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -23,48 +26,81 @@ function formatAddress(address: string | undefined): string {
 
 type TransactionFilter = 'all' | 'hide-rewards' | 'only-rewards';
 
+const TRANSACTIONS_PER_PAGE = 10;
+
 export function TransactionList() {
   const [filter, setFilter] = useState<TransactionFilter>('all');
+
   const {
-    data: transactions,
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
     isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['transactions', 'latest'],
-    queryFn: () => api.getLatestTransactions(20),
-    refetchInterval: 5000,
+    isError,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey: ['transactions', 'infinite'],
+    queryFn: ({ pageParam = 0 }) =>
+      api.getLatestTransactions(TRANSACTIONS_PER_PAGE, pageParam),
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.length < TRANSACTIONS_PER_PAGE) return undefined;
+      return allPages.length * TRANSACTIONS_PER_PAGE;
+    },
+    initialPageParam: 0,
+    refetchInterval: 10000,
   });
 
-  const filteredTransactions = transactions?.filter((tx: RecentTransaction) => {
-    const isCoinbase = tx.inputs[0]?.isCoinbase;
-    if (filter === 'hide-rewards') return !isCoinbase;
-    if (filter === 'only-rewards') return isCoinbase;
-    return true;
-  });
+  const allTransactions = data?.pages.flat() ?? [];
+
+  const filteredTransactions = allTransactions.filter(
+    (tx: RecentTransaction) => {
+      const isCoinbase = tx.inputs[0]?.isCoinbase;
+      if (filter === 'hide-rewards') return !isCoinbase;
+      if (filter === 'only-rewards') return isCoinbase;
+      return true;
+    }
+  );
 
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Latest Transactions</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Latest Transactions
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="flex flex-col items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+            <p className="text-sm text-muted-foreground">
+              Loading transactions...
+            </p>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Latest Transactions</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Latest Transactions
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-destructive">Failed to load transactions</div>
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="text-destructive mb-4">
+              Failed to load transactions
+            </div>
+            <Button onClick={() => refetch()} variant="outline" size="sm">
+              Try Again
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -73,9 +109,19 @@ export function TransactionList() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Latest Transactions</CardTitle>
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Transaction History
+              {allTransactions.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {allTransactions.length}
+                </Badge>
+              )}
+            </CardTitle>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <div className="flex gap-1">
               <Button
@@ -246,6 +292,36 @@ export function TransactionList() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {filteredTransactions.length > 0 && hasNextPage && (
+          <div className="mt-6 flex justify-center">
+            <Button
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+              variant="outline"
+              size="lg"
+              className="w-full max-w-md"
+            >
+              {isFetchingNextPage ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Loading more...
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4 mr-2" />
+                  Load More Transactions
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {!hasNextPage && filteredTransactions.length > 0 && (
+          <div className="mt-6 text-center text-sm text-muted-foreground py-4 border-t">
+            You've reached the end of the transaction history
           </div>
         )}
       </CardContent>

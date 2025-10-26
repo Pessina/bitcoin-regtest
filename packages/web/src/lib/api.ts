@@ -345,13 +345,17 @@ export const api = {
     return txid;
   },
 
-  async getLatestTransactions(limit = 20): Promise<RecentTransaction[]> {
+  async getLatestTransactions(
+    limit = 20,
+    offset = 0
+  ): Promise<RecentTransaction[]> {
     const blockCount = await rpc<number>('getblockcount');
     const transactions: RecentTransaction[] = [];
     const seenTxids = new Set<string>();
 
     let blocksScanned = 0;
-    const maxBlocksToScan = 10;
+    const maxBlocksToScan = 50;
+    let skipped = 0;
 
     for (
       let height = blockCount;
@@ -416,7 +420,7 @@ export const api = {
         const totalOutput = tx.vout.reduce((sum, vout) => sum + vout.value, 0);
         const fee = inputs[0]?.isCoinbase ? 0 : totalInput - totalOutput;
 
-        transactions.push({
+        const transaction = {
           txid: tx.txid,
           hash: tx.hash,
           blockHeight: height,
@@ -430,7 +434,15 @@ export const api = {
           totalInput,
           totalOutput,
           fee,
-        });
+        };
+
+        // Skip transactions for offset
+        if (skipped < offset) {
+          skipped++;
+          continue;
+        }
+
+        transactions.push(transaction);
 
         if (transactions.length >= limit) {
           return transactions;

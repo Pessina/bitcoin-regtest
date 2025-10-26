@@ -1,0 +1,24 @@
+services:
+  bitcoin-regtest:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bitcoin-regtest
+    ports:
+      - "18443:18443"  # Bitcoin RPC
+      - "5173:5173"    # Web UI
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "bitcoin-cli", "-regtest", "-rpcuser=test", "-rpcpassword=test123", "getblockchaininfo"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - bitcoin-network
+
+networks:
+  bitcoin-network:
+    driver: bridge
