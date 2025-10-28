@@ -17,7 +17,19 @@ export function Search({ onSearch }: SearchProps) {
 
     if (!trimmedQuery) return;
 
-    const type = trimmedQuery.length === 64 ? 'transaction' : 'address';
+    let type: 'address' | 'transaction';
+
+    if (trimmedQuery.length === 64) {
+      type = 'transaction';
+    } else if (/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(trimmedQuery) ||
+               /^bc1[a-z0-9]{39,87}$/.test(trimmedQuery)) {
+      type = 'address';
+    } else if (trimmedQuery.length === 64 && /^[0-9a-fA-F]{64}$/.test(trimmedQuery)) {
+      type = 'transaction';
+    } else {
+      type = 'address';
+    }
+
     onSearch(trimmedQuery, type);
     setQuery('');
   };
@@ -26,7 +38,7 @@ export function Search({ onSearch }: SearchProps) {
     <form onSubmit={handleSubmit} className="flex gap-2 flex-1 max-w-2xl">
       <Input
         type="text"
-        placeholder="Search by address or transaction ID..."
+        placeholder="Search address, transaction ID, or block hash..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         className="flex-1"

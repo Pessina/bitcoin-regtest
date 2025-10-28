@@ -5,10 +5,12 @@ import {
   ArrowUpRight,
   Coins,
   Wallet,
+  Clock,
 } from 'lucide-react';
 
 import { api } from '../lib/api';
 import { CopyableAddress } from './CopyableAddress';
+import { QRCodeDisplay } from './QRCodeDisplay';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
@@ -30,6 +32,12 @@ export function AddressDetails({ address, onBack }: AddressDetailsProps) {
     queryKey: ['address', address],
     queryFn: () => api.getAddressBalance(address),
     enabled: !!address,
+  });
+
+  const { data: blockchainInfo } = useQuery({
+    queryKey: ['blockchainInfo'],
+    queryFn: () => api.getBlockchainInfo(),
+    refetchInterval: 5000,
   });
 
   if (isLoading) {
@@ -88,9 +96,12 @@ export function AddressDetails({ address, onBack }: AddressDetailsProps) {
         <CardContent>
           <div className="space-y-4">
             <div className="border rounded-lg p-4 bg-accent/50">
-              <div className="flex items-center gap-2 mb-2">
-                <Wallet className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Address</span>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <Wallet className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Address</span>
+                </div>
+                <QRCodeDisplay value={result.address} title="Address QR Code" />
               </div>
               <CopyableAddress
                 address={result.address}
@@ -121,25 +132,34 @@ export function AddressDetails({ address, onBack }: AddressDetailsProps) {
               <div className="border rounded-lg p-4">
                 <h3 className="font-semibold mb-3">Unspent Outputs</h3>
                 <div className="space-y-2">
-                  {result.utxos.map((utxo, idx) => (
-                    <div
-                      key={`${utxo.txid}-${utxo.vout}`}
-                      className="text-sm border-b pb-2 last:border-0"
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">
-                          UTXO #{idx + 1}
-                        </span>
-                        <span className="font-semibold">{utxo.amount} BTC</span>
+                  {result.utxos.map((utxo, idx) => {
+                    const age = blockchainInfo ? blockchainInfo.blocks - utxo.height : 0;
+                    return (
+                      <div
+                        key={`${utxo.txid}-${utxo.vout}`}
+                        className="text-sm border-b pb-2 last:border-0"
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">
+                            UTXO #{idx + 1}
+                          </span>
+                          <span className="font-semibold">{utxo.amount} BTC</span>
+                        </div>
+                        <code className="text-xs text-muted-foreground font-mono block mt-1">
+                          {utxo.txid.slice(0, 16)}...:{utxo.vout}
+                        </code>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
+                          <span>Height: {utxo.height}</span>
+                          {blockchainInfo && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              <span>{age} block{age !== 1 ? 's' : ''} old</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <code className="text-xs text-muted-foreground font-mono block mt-1">
-                        {utxo.txid.slice(0, 16)}...:{utxo.vout}
-                      </code>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Height: {utxo.height}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

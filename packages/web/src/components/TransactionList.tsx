@@ -5,7 +5,6 @@ import {
   ChevronDown,
   Clock,
   Coins,
-  Filter,
   Hash,
   Layers,
   Loader2,
@@ -18,7 +17,10 @@ import { api, type RecentTransaction } from '../lib/api';
 import { CopyableAddress } from './CopyableAddress';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Card } from './ui/card';
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { formatTimeAgoWithTooltip } from '../lib/timeUtils';
 
 type TransactionFilter = 'all' | 'hide-rewards' | 'only-rewards';
 
@@ -60,109 +62,74 @@ export function TransactionList() {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Latest Transactions
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-            <p className="text-sm text-muted-foreground">
-              Loading transactions...
-            </p>
+      <Card className="p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+            ))}
           </div>
-        </CardContent>
+        </div>
       </Card>
     );
   }
 
   if (isError) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Latest Transactions
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center py-12">
-            <div className="text-destructive mb-4">
-              Failed to load transactions
-            </div>
-            <Button onClick={() => refetch()} variant="outline" size="sm">
-              Try Again
-            </Button>
+      <Card className="p-6">
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="text-red-600 mb-4">
+            Failed to load transactions
           </div>
-        </CardContent>
+          <Button onClick={() => refetch()} variant="outline" size="sm">
+            Try Again
+          </Button>
+        </div>
       </Card>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Transaction History
-              {allTransactions.length > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  {allTransactions.length}
-                </Badge>
-              )}
-            </CardTitle>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <div className="flex gap-1">
-              <Button
-                variant={filter === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilter('all')}
-              >
-                All
-              </Button>
-              <Button
-                variant={filter === 'hide-rewards' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilter('hide-rewards')}
-              >
-                Hide Rewards
-              </Button>
-              <Button
-                variant={filter === 'only-rewards' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilter('only-rewards')}
-              >
-                Only Rewards
-              </Button>
-            </div>
-          </div>
+    <Card className="p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Package className="h-5 w-5 text-gray-700" />
+          <h2 className="text-lg font-semibold text-gray-900">Transaction History</h2>
+          {allTransactions.length > 0 && (
+            <Badge variant="secondary" className="ml-2">
+              {allTransactions.length}
+            </Badge>
+          )}
         </div>
-      </CardHeader>
-      <CardContent>
+        <Tabs value={filter} onValueChange={(value) => setFilter(value as TransactionFilter)}>
+          <TabsList>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="hide-rewards">Normal</TabsTrigger>
+            <TabsTrigger value="only-rewards">Rewards</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+      <div className="space-y-4">
         {filteredTransactions?.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-8 text-gray-500">
             No transactions match the selected filter
           </div>
         ) : (
-          <div className="space-y-4">
+          <TooltipProvider>
             {filteredTransactions?.map((tx: RecentTransaction) => {
               const time = Number(tx.time);
               const vsize = Number(tx.vsize);
               const totalOutput = Number(tx.totalOutput);
               const fee = Number(tx.fee);
               const isCoinbase = tx.inputs[0]?.isCoinbase;
+              const { timeAgo, fullDate } = formatTimeAgoWithTooltip(time);
 
               return (
                 <div
                   key={tx.txid}
-                  className="border rounded-lg p-3 hover:border-primary/50 transition-colors"
+                  onClick={() => window.location.hash = `tx/${tx.txid}`}
+                  className="border rounded-lg p-3 hover:border-blue-300 hover:bg-blue-50/50 transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -180,10 +147,17 @@ export function TransactionList() {
                         #{tx.blockHeight}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      {new Date(time * 1000).toLocaleTimeString()}
-                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          {timeAgo}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{fullDate}</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
 
                   <div className="flex items-center gap-2 mb-3">
@@ -293,39 +267,39 @@ export function TransactionList() {
                 </div>
               );
             })}
-          </div>
+          </TooltipProvider>
         )}
+      </div>
 
-        {filteredTransactions.length > 0 && hasNextPage && (
-          <div className="mt-6 flex justify-center">
-            <Button
-              onClick={() => fetchNextPage()}
-              disabled={isFetchingNextPage}
-              variant="outline"
-              size="lg"
-              className="w-full max-w-md"
-            >
-              {isFetchingNextPage ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Loading more...
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-4 w-4 mr-2" />
-                  Load More Transactions
-                </>
-              )}
-            </Button>
-          </div>
-        )}
+      {filteredTransactions.length > 0 && hasNextPage && (
+        <div className="mt-6 flex justify-center">
+          <Button
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            variant="outline"
+            size="lg"
+            className="w-full"
+          >
+            {isFetchingNextPage ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Loading more...
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4 mr-2" />
+                Load More
+              </>
+            )}
+          </Button>
+        </div>
+      )}
 
-        {!hasNextPage && filteredTransactions.length > 0 && (
-          <div className="mt-6 text-center text-sm text-muted-foreground py-4 border-t">
-            You've reached the end of the transaction history
-          </div>
-        )}
-      </CardContent>
+      {!hasNextPage && filteredTransactions.length > 0 && (
+        <div className="mt-6 text-center text-sm text-gray-500 py-4 border-t">
+          End of history
+        </div>
+      )}
     </Card>
   );
 }

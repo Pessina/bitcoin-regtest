@@ -11,6 +11,8 @@ import {
 
 import { api } from '../lib/api';
 import { CopyableAddress } from './CopyableAddress';
+import { TransactionBadges } from './TransactionBadges';
+import { ScriptTypeLabel } from './ScriptTypeLabel';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -75,6 +77,7 @@ export function TransactionDetails({ txid, onBack }: TransactionDetailsProps) {
   }
 
   const isCoinbase = tx.inputs[0]?.isCoinbase;
+  const isSegWit = tx.weight < tx.size * 4;
 
   return (
     <div className="space-y-6">
@@ -87,7 +90,10 @@ export function TransactionDetails({ txid, onBack }: TransactionDetailsProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Transaction Details</CardTitle>
-            {isCoinbase && <Badge variant="secondary">Mining Reward</Badge>}
+            <div className="flex items-center gap-2">
+              {isCoinbase && <Badge variant="secondary">Mining Reward</Badge>}
+              <TransactionBadges isSegWit={isSegWit} />
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -190,9 +196,7 @@ export function TransactionDetails({ txid, onBack }: TransactionDetailsProps) {
                         {output.address ? (
                           <CopyableAddress address={output.address} />
                         ) : (
-                          <span className="text-xs text-muted-foreground">
-                            {output.scriptType}
-                          </span>
+                          <ScriptTypeLabel scriptType={output.scriptType} />
                         )}
                         <span className="text-xs font-semibold whitespace-nowrap">
                           {output.value.toFixed(8)} BTC
