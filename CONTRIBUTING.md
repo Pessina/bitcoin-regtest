@@ -1,35 +1,6 @@
-# Contributing to Bitcoin Regtest Explorer
+# Contributing Guide
 
-First off, thank you for considering contributing to Bitcoin Regtest Explorer! It's people like you that make this tool better for everyone.
-
-## Table of Contents
-
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [How to Contribute](#how-to-contribute)
-- [Pull Request Process](#pull-request-process)
-- [Coding Standards](#coding-standards)
-- [Project Structure](#project-structure)
-- [Testing](#testing)
-- [Documentation](#documentation)
-
----
-
-## Code of Conduct
-
-### Our Pledge
-
-We are committed to providing a welcoming and inspiring community for all. Please be respectful and professional in all interactions.
-
-### Our Standards
-
-- ✅ Use welcoming and inclusive language
-- ✅ Be respectful of differing viewpoints
-- ✅ Accept constructive criticism gracefully
-- ✅ Focus on what is best for the community
-
----
+Thank you for considering contributing to Bitcoin Regtest Explorer.
 
 ## Getting Started
 
@@ -39,142 +10,64 @@ We are committed to providing a welcoming and inspiring community for all. Pleas
 - Yarn >= 1.22
 - Bitcoin Core >= 30.0 (for local development)
 - Git
-- A code editor (we recommend VS Code)
 
-### Fork and Clone
+### Setup
 
-1. Fork the repository on GitHub
-2. Clone your fork locally:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/bitcoin-regtest.git
-   cd bitcoin-regtest
-   ```
-3. Add upstream remote:
-   ```bash
-   git remote add upstream https://github.com/Pessina/bitcoin-regtest.git
-   ```
-
----
-
-## Development Setup
-
-### Initial Setup
-
+1. Fork and clone the repository:
 ```bash
-# Install dependencies
+git clone https://github.com/YOUR_USERNAME/bitcoin-regtest.git
+cd bitcoin-regtest
+```
+
+2. Add upstream remote:
+```bash
+git remote add upstream https://github.com/Pessina/bitcoin-regtest.git
+```
+
+3. Install dependencies:
+```bash
 yarn install
+```
 
-# Build all packages
+4. Build and verify:
+```bash
 yarn build
-
-# Start development
+yarn type-check
 yarn start
 ```
 
-### VS Code Setup (Recommended)
+## Development Workflow
 
-1. **Install Extensions**:
-   - ESLint
-   - Prettier - Code formatter
-   - TypeScript Vue Plugin (Volar)
+### Creating a Branch
 
-2. **Workspace Settings** (`.vscode/settings.json`):
-   ```json
-   {
-     "editor.formatOnSave": true,
-     "editor.codeActionsOnSave": {
-       "source.fixAll.eslint": true
-     },
-     "typescript.tsdk": "node_modules/typescript/lib",
-     "typescript.enablePromptUseWorkspaceTsdk": true
-   }
-   ```
+Use descriptive branch names with prefixes:
 
----
-
-## How to Contribute
-
-### Types of Contributions
-
-We welcome many types of contributions:
-
-#### 🐛 Bug Reports
-
-Found a bug? Please open an issue with:
-- Clear title and description
-- Steps to reproduce
-- Expected vs actual behavior
-- Screenshots if applicable
-- Environment details (OS, Node version, etc.)
-
-#### ✨ Feature Requests
-
-Have an idea? Open an issue with:
-- Clear description of the feature
-- Use case and benefits
-- Possible implementation approach
-- Examples or mockups if applicable
-
-#### 📝 Documentation
-
-Help improve our docs:
-- Fix typos or clarify existing docs
-- Add examples or tutorials
-- Improve API documentation
-- Translate documentation
-
-#### 🎨 UI/UX Improvements
-
-Enhance the web explorer:
-- Design improvements
-- Accessibility enhancements
-- Mobile responsiveness
-- User experience refinements
-
-#### 🧪 Tests
-
-Help us maintain quality:
-- Add unit tests
-- Write integration tests
-- Improve test coverage
-- Fix flaky tests
-
----
-
-## Pull Request Process
-
-### 1. Create a Branch
-
-Use descriptive branch names:
 ```bash
 git checkout -b feature/add-lightning-support
 git checkout -b fix/mempool-display-bug
 git checkout -b docs/api-examples
 ```
 
-Branch naming conventions:
+Branch prefixes:
 - `feature/` - New features
 - `fix/` - Bug fixes
-- `docs/` - Documentation changes
+- `docs/` - Documentation
 - `refactor/` - Code refactoring
-- `test/` - Test additions/changes
-- `chore/` - Maintenance tasks
+- `test/` - Tests
+- `chore/` - Maintenance
 
-### 2. Make Your Changes
+### Making Changes
 
-- Write clean, readable code
-- Follow our [coding standards](#coding-standards)
-- Add tests for new features
-- Update documentation as needed
-- Keep commits atomic and focused
+1. Make your changes following the [code style](#code-style)
+2. Add tests for new features
+3. Update documentation as needed
+4. Keep commits focused and atomic
 
-### 3. Commit Your Changes
+### Commit Messages
 
-We follow [Conventional Commits](https://www.conventionalcommits.org/):
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
-```bash
-# Format: <type>: <description>
-
+```
 feat: add lightning network support
 fix: correct mempool transaction sorting
 docs: add API usage examples
@@ -184,77 +77,61 @@ test: add tests for address validation
 chore: update dependencies
 ```
 
-**Commit Types:**
+Types:
 - `feat` - New feature
 - `fix` - Bug fix
 - `docs` - Documentation only
 - `style` - Formatting (no code change)
-- `refactor` - Code change (no feature/fix)
+- `refactor` - Code change (neither feature nor fix)
 - `test` - Adding tests
-- `chore` - Maintenance
+- `chore` - Maintenance tasks
 
-### 4. Sync with Upstream
+### Before Committing
 
-Keep your branch up to date:
+Run the following checks:
+
+```bash
+yarn format
+yarn lint:fix
+yarn type-check
+yarn build
+```
+
+### Syncing with Upstream
+
+Keep your fork up to date:
+
 ```bash
 git fetch upstream
 git rebase upstream/main
 ```
 
-### 5. Run Checks
+### Submitting a Pull Request
 
-Before pushing, ensure everything passes:
+1. Push your branch:
 ```bash
-# Format code
-yarn format
-
-# Fix linting issues
-yarn lint:fix
-
-# Type check
-yarn type-check
-
-# Build
-yarn build
-
-# Test manually
-yarn start
+git push origin feature/your-feature
 ```
 
-### 6. Push and Create PR
+2. Open a Pull Request with:
+   - Clear, descriptive title (following conventional commits)
+   - Detailed description of changes
+   - Reference to related issues (if applicable)
+   - Screenshots for UI changes
 
-```bash
-git push origin feature/your-feature-name
-```
+3. Address review feedback promptly
 
-Then create a Pull Request on GitHub with:
-- Clear title following conventional commits
-- Detailed description of changes
-- Reference any related issues
-- Screenshots for UI changes
-- Test results
-
-### 7. Code Review
-
-- Address reviewer feedback promptly
-- Keep discussions professional
-- Be open to suggestions
-- Update your PR as needed
-
----
-
-## Coding Standards
+## Code Style
 
 ### TypeScript
 
-- Use TypeScript strict mode
-- Define types for all function parameters and returns
-- Avoid `any` - use `unknown` if needed
-- Use interfaces over type aliases for objects
+- Use strict mode
+- Define explicit types for parameters and returns
+- Avoid `any`; use `unknown` if type is truly unknown
+- Use interfaces for object shapes
 
-**Example:**
+Example:
 ```typescript
-// ✅ Good
 interface BlockData {
   height: number;
   hash: string;
@@ -262,25 +139,20 @@ interface BlockData {
 }
 
 async function getBlock(hash: string): Promise<BlockData> {
-  // ...
-}
-
-// ❌ Bad
-function getBlock(hash: any): any {
-  // ...
+  const data = await rpc('getblock', [hash, 2]);
+  return parseBlock(data);
 }
 ```
 
 ### React Components
 
 - Use functional components with hooks
-- Keep components small and focused
-- Use meaningful component names
+- Keep components focused and single-purpose
 - Extract reusable logic into custom hooks
+- Use meaningful names
 
-**Example:**
+Example:
 ```typescript
-// ✅ Good
 export function BlockList() {
   const { data, isLoading } = useQuery({
     queryKey: ['blocks'],
@@ -303,12 +175,10 @@ export function BlockList() {
 
 - Use Tailwind CSS utility classes
 - Follow mobile-first responsive design
-- Use semantic color names
-- Maintain consistent spacing
+- Maintain consistent spacing and colors
 
-**Example:**
+Example:
 ```typescript
-// ✅ Good
 <div className="flex items-center gap-2 p-4 rounded-lg border border-gray-200">
   <Icon className="h-4 w-4 text-blue-600" />
   <span className="text-sm font-medium text-gray-900">Block Height</span>
@@ -319,37 +189,20 @@ export function BlockList() {
 
 - One component per file
 - Co-locate related files
-- Use index files for clean imports
 - Keep files under 300 lines
-
-**Directory Structure:**
-```
-src/
-├── components/
-│   ├── BlockList/
-│   │   ├── BlockList.tsx
-│   │   ├── BlockCard.tsx
-│   │   └── index.ts
-│   └── ui/
-│       └── button.tsx
-├── lib/
-│   ├── api.ts
-│   └── utils.ts
-└── hooks/
-    └── useBlocks.ts
-```
+- Use barrel exports (index.ts) for clean imports
 
 ### API Methods
 
-- Use async/await (not promises)
-- Handle errors gracefully
-- Add JSDoc comments
-- Return typed data
+- Use async/await
+- Handle errors appropriately
+- Add JSDoc comments for public APIs
+- Return strongly typed data
 
-**Example:**
+Example:
 ```typescript
 /**
- * Fetches block details by hash or height
+ * Fetches block details by hash or height.
  * @param identifier - Block hash or height
  * @returns Block details with transactions
  * @throws Error if block not found
@@ -366,72 +219,44 @@ export async function getBlock(
 }
 ```
 
----
-
 ## Project Structure
 
-### Monorepo Layout
+### Repository Layout
 
 ```
 bitcoin-regtest/
 ├── packages/
 │   ├── server/          # Bitcoin regtest manager
-│   │   ├── src/
-│   │   │   ├── BitcoinRegtestManager.ts
-│   │   │   ├── server.ts
-│   │   │   ├── cli.ts
-│   │   │   └── types.ts
-│   │   └── package.json
-│   │
 │   └── web/            # React explorer UI
-│       ├── src/
-│       │   ├── components/
-│       │   ├── lib/
-│       │   ├── App.tsx
-│       │   └── main.tsx
-│       └── package.json
-│
-├── .github/            # GitHub workflows
 ├── docker-compose.yml
 ├── Dockerfile
-├── package.json        # Root package
-└── tsconfig.base.json
+└── package.json
 ```
 
 ### Where to Make Changes
 
-| Change Type | Location |
-|-------------|----------|
+| Change | Location |
+|--------|----------|
 | Bitcoin regtest logic | `packages/server/src/BitcoinRegtestManager.ts` |
-| HTTP server/proxy | `packages/server/src/server.ts` |
+| HTTP server | `packages/server/src/server.ts` |
 | API client | `packages/web/src/lib/api.ts` |
 | UI components | `packages/web/src/components/` |
 | Utilities | `packages/web/src/lib/` |
-| Styling | Tailwind classes in components |
 | Documentation | `README.md`, `CONTRIBUTING.md` |
-
----
 
 ## Testing
 
 ### Running Tests
 
 ```bash
-# Run all tests
 yarn test
-
-# Run specific package tests
 yarn workspace @bitcoin-regtest/server test
 yarn workspace @bitcoin-regtest/web test
-
-# Watch mode
-yarn test --watch
 ```
 
 ### Writing Tests
 
-#### Unit Tests
-
+**Unit Tests:**
 ```typescript
 import { formatTimeAgo } from '../lib/timeUtils';
 
@@ -440,16 +265,10 @@ describe('formatTimeAgo', () => {
     const result = formatTimeAgo(Date.now() / 1000 - 30);
     expect(result).toBe('30s ago');
   });
-
-  it('should format minutes', () => {
-    const result = formatTimeAgo(Date.now() / 1000 - 300);
-    expect(result).toBe('5m ago');
-  });
 });
 ```
 
-#### Integration Tests
-
+**Integration Tests:**
 ```typescript
 import { BitcoinRegtestManager } from '@bitcoin-regtest/server';
 
@@ -475,23 +294,19 @@ describe('BitcoinRegtestManager', () => {
 
 ### Manual Testing
 
-Always test your changes manually:
+Always test changes manually:
 
-1. Start the application: `yarn start`
-2. Open http://localhost:5173
-3. Test all affected features
-4. Check browser console for errors
-5. Test on different screen sizes
-
----
+1. Start: `yarn start`
+2. Open: http://localhost:5173
+3. Test affected features
+4. Check console for errors
+5. Test responsive behavior
 
 ## Documentation
 
 ### Code Comments
 
-- Add JSDoc for public APIs
-- Explain "why", not "what"
-- Keep comments up to date
+Add JSDoc comments for public APIs:
 
 ```typescript
 /**
@@ -499,7 +314,7 @@ Always test your changes manually:
  * Uses generatetoaddress RPC to ensure deterministic mining.
  */
 private startAutoMining(): void {
-  // ...
+  // Implementation
 }
 ```
 
@@ -508,34 +323,46 @@ private startAutoMining(): void {
 Update README when:
 - Adding new features
 - Changing APIs
-- Modifying setup steps
+- Modifying setup process
 - Adding dependencies
 
-### Changelog
+## Pull Request Guidelines
 
-Update CHANGELOG.md (if exists):
-- Add entry under "Unreleased"
-- Follow Keep a Changelog format
-- Link to issues/PRs
+### Before Submitting
 
----
+- [ ] Code follows style guidelines
+- [ ] All tests pass
+- [ ] Type checking passes
+- [ ] Build succeeds
+- [ ] Documentation updated
+- [ ] Commit messages follow convention
 
-## Questions?
+### PR Description Template
 
-- **General Questions**: Open a GitHub Discussion
-- **Bug Reports**: Open an Issue
-- **Feature Requests**: Open an Issue
-- **Security Issues**: Email (add security email)
+```markdown
+## Description
+Brief description of changes
 
----
+## Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
 
-## Recognition
+## Testing
+How the changes were tested
 
-Contributors will be:
-- Listed in README (optional)
-- Mentioned in release notes
-- Part of an amazing Bitcoin developer community!
+## Related Issues
+Closes #123
+```
 
----
+## Getting Help
 
-Thank you for contributing to Bitcoin Regtest Explorer! 🚀
+- **Questions**: Open a GitHub Discussion
+- **Bugs**: Open an Issue
+- **Features**: Open an Issue
+- **Security**: See SECURITY.md (if exists)
+
+## Code of Conduct
+
+Be respectful and professional in all interactions. We're building tools for the Bitcoin developer community.
