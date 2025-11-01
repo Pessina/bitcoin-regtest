@@ -30,23 +30,43 @@ jobs:
       IMAGE_NAME: pessina/bitcoin-regtest
       IMAGE_TAG: ${{ github.sha }}
       OCI_VERSION: ""
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    outputs:
+      image-name: ${{ steps.vars.outputs.image-name }}
+      image-tag: ${{ steps.vars.outputs.image-tag }}
+      oci-version: ${{ steps.vars.outputs.oci-version }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Apply workflow_dispatch inputs
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+      - name: Resolve inputs
+        id: vars
         run: |
-          if [ -n "${{ github.event.inputs.image }}" ]; then
-            echo "IMAGE_NAME=${{ github.event.inputs.image }}" >> "$GITHUB_ENV"
+          IMAGE_NAME="pessina/bitcoin-regtest"
+          IMAGE_TAG="${GITHUB_SHA}"
+          OCI_VERSION=""
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ -n "${{ github.event.inputs.image }}" ]]; then
+              IMAGE_NAME="${{ github.event.inputs.image }}"
+            fi
+            if [[ -n "${{ github.event.inputs.tag }}" ]]; then
+              IMAGE_TAG="${{ github.event.inputs.tag }}"
+            fi
+            if [[ -n "${{ github.event.inputs.npm_version }}" ]]; then
+              OCI_VERSION="${{ github.event.inputs.npm_version }}"
+            fi
           fi
-          if [ -n "${{ github.event.inputs.tag }}" ]; then
-            echo "IMAGE_TAG=${{ github.event.inputs.tag }}" >> "$GITHUB_ENV"
-          fi
-          if [ -n "${{ github.event.inputs.npm_version }}" ]; then
-            echo "OCI_VERSION=${{ github.event.inputs.npm_version }}" >> "$GITHUB_ENV"
-          fi
+
+          echo "image-name=${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
+          echo "image-tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "oci-version=${OCI_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "IMAGE_NAME=${IMAGE_NAME}" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
+          echo "OCI_VERSION=${OCI_VERSION}" >> "$GITHUB_ENV"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -69,17 +89,17 @@ jobs:
             org.opencontainers.image.version=${{ env.OCI_VERSION }}
 
       - name: Log in to Docker Hub
-        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+        if: ${{ env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != '' }}
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
 
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+          push: ${{ env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != '' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
