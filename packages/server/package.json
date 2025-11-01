@@ -1,6 +1,6 @@
 {
-  "name": "@bitcoin-regtest/server",
-  "version": "1.0.0",
+  "name": "bitcoin-regtest",
+  "version": "1.0.1",
   "description": "Zero-config Bitcoin regtest environment with auto-mining. Perfect for local development and testing Bitcoin applications without running bitcoind manually.",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
