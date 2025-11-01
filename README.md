@@ -5,7 +5,7 @@
 [![Node.js 22+](https://img.shields.io/badge/Node.js-22+-green?logo=node.js)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9+-blue?logo=typescript)](https://www.typescriptlang.org)
 [![npm](https://img.shields.io/npm/v/@bitcoin-regtest/server.svg?logo=npm&label=@bitcoin-regtest/server)](https://www.npmjs.com/package/@bitcoin-regtest/server)
-[![Docker Pulls](https://img.shields.io/docker/pulls/pessina/bitcoin-regtest.svg?logo=docker)](https://hub.docker.com/r/pessina/bitcoin-regtest)
+[![Docker Pulls](https://img.shields.io/docker/pulls/fspessina/bitcoin-regtest.svg?logo=docker)](https://hub.docker.com/r/fspessina/bitcoin-regtest)
 
 Bitcoin Regtest Explorer is a self-contained Bitcoin Core regtest stack with a modern explorer UI and a programmatic control surface. It is designed for teams that need deterministic, scriptable Bitcoin environments without hand-managing `bitcoind`.
 
@@ -18,13 +18,17 @@ Bitcoin Regtest Explorer is a self-contained Bitcoin Core regtest stack with a m
 
 ## Screenshots (Reference)
 
-### Explorer View
+### Explorer Dashboard
 
-![Explorer View](docs/screenshots/explorer-view.png)
+![Explorer dashboard](docs/screenshots/explorer-dashboard.png)
 
-### Mempool View
+### Block & Transaction History
 
-![Mempool View](docs/screenshots/mempool-view.png)
+![Explorer history](docs/screenshots/explorer-history.png)
+
+### Transaction Detail
+
+![Transaction detail](docs/screenshots/transaction-details.png)
 
 ## Getting Started
 
