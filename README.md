@@ -18,10 +18,6 @@ Bitcoin Regtest Explorer is a self-contained Bitcoin Core regtest stack with a m
 
 ## Screenshots (Reference)
 
-### Explorer Dashboard
-
-![Explorer dashboard](docs/screenshots/explorer-dashboard.png)
-
 ### Block & Transaction History
 
 ![Explorer history](docs/screenshots/explorer-history.png)
