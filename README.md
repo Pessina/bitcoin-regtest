@@ -4,6 +4,8 @@
 [![Bitcoin Core 30+](https://img.shields.io/badge/Bitcoin-Core_30+-orange?logo=bitcoin)](https://bitcoin.org)
 [![Node.js 22+](https://img.shields.io/badge/Node.js-22+-green?logo=node.js)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9+-blue?logo=typescript)](https://www.typescriptlang.org)
+[![npm](https://img.shields.io/npm/v/@bitcoin-regtest/server.svg?logo=npm&label=@bitcoin-regtest/server)](https://www.npmjs.com/package/@bitcoin-regtest/server)
+[![Docker Pulls](https://img.shields.io/docker/pulls/pessina/bitcoin-regtest.svg?logo=docker)](https://hub.docker.com/r/pessina/bitcoin-regtest)
 
 Bitcoin Regtest Explorer is a self-contained Bitcoin Core regtest stack with a modern explorer UI and a programmatic control surface. It is designed for teams that need deterministic, scriptable Bitcoin environments without hand-managing `bitcoind`.
 
@@ -17,9 +19,11 @@ Bitcoin Regtest Explorer is a self-contained Bitcoin Core regtest stack with a m
 ## Screenshots (Reference)
 
 ### Explorer View
+
 ![Explorer View](docs/screenshots/explorer-view.png)
 
 ### Mempool View
+
 ![Mempool View](docs/screenshots/mempool-view.png)
 
 ## Getting Started
@@ -54,14 +58,14 @@ yarn docker:dev
 
 Supported variables:
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `BITCOIN_RPC_HOST` | `localhost` | Hostname/IP that the proxy uses to reach `bitcoind` (no protocol prefix). |
-| `BITCOIN_RPC_PORT` | `18443` | RPC port advertised internally and to the explorer proxy. |
-| `BITCOIN_RPC_USER` | `test` | RPC basic-auth username. |
-| `BITCOIN_RPC_PASSWORD` | `test123` | RPC basic-auth password. |
-| `AUTO_MINE_INITIAL_BLOCKS` | `101` | Blocks mined after wallet creation to unlock coinbase funds. |
-| `AUTO_MINE_INTERVAL_MS` | `10000` | Auto-mining cadence for the background block generator. |
+| Variable                   | Default     | Purpose                                                                   |
+| -------------------------- | ----------- | ------------------------------------------------------------------------- |
+| `BITCOIN_RPC_HOST`         | `localhost` | Hostname/IP that the proxy uses to reach `bitcoind` (no protocol prefix). |
+| `BITCOIN_RPC_PORT`         | `18443`     | RPC port advertised internally and to the explorer proxy.                 |
+| `BITCOIN_RPC_USER`         | `test`      | RPC basic-auth username.                                                  |
+| `BITCOIN_RPC_PASSWORD`     | `test123`   | RPC basic-auth password.                                                  |
+| `AUTO_MINE_INITIAL_BLOCKS` | `101`       | Blocks mined after wallet creation to unlock coinbase funds.              |
+| `AUTO_MINE_INTERVAL_MS`    | `10000`     | Auto-mining cadence for the background block generator.                   |
 
 The same overrides apply to `docker compose up` or `docker run -e KEY=value ...`.
 
@@ -76,6 +80,7 @@ yarn start
 ```
 
 Endpoints (defaults unless overridden):
+
 - Explorer UI: http://localhost:5173
 - Bitcoin RPC: `localhost:18443`
 - RPC credentials: `test` / `test123`
@@ -118,6 +123,7 @@ const manager = new BitcoinRegtestManager({
 ```
 
 `BitcoinRegtestManager` responsibilities:
+
 - Start/stop `bitcoind` and wait for readiness.
 - Create/load the dedicated regtest wallet and return a default address.
 - Mine initial spendable funds and continue mining on a timer.
@@ -147,7 +153,7 @@ describe('Bitcoin Integration Tests', () => {
 
   beforeAll(async () => {
     manager = new BitcoinRegtestManager({
-      autoMineIntervalMs: 5000
+      autoMineIntervalMs: 5000,
     });
     await manager.start();
   });
@@ -187,6 +193,7 @@ Single-container deployment composed of:
 3. **Explorer UI** — React + Vite frontend that consumes the RPC proxy for blockchain data, mempool statistics, fee insights, faucets, and broadcasting.
 
 Control flow:
+
 1. Container (or local process) launches `packages/server/dist/cli.js`.
 2. `BitcoinRegtestManager` starts `bitcoind`, prepares the wallet, and kicks off auto-mining.
 3. The server exposes `/rpc`, either serving static assets (production) or proxying to Vite (dev).
@@ -196,30 +203,31 @@ Control flow:
 
 Use Yarn scripts from the repository root:
 
-| Command | Description |
-| --- | --- |
-| `yarn build` | Compile both packages. |
-| `yarn build:watch` | Rebuild the server package on source changes. |
-| `yarn start` | Start the orchestrator (spawns the explorer or Vite dev server). |
-| `yarn type-check` | Run TypeScript checks for both packages. |
-| `yarn lint` / `yarn lint:fix` | Lint (and optionally fix) all sources. |
-| `yarn docker:dev` | Build the image and launch the container. |
-| `yarn docker:down` / `yarn docker:clean` | Stop the container or remove volumes. |
+| Command                                  | Description                                                      |
+| ---------------------------------------- | ---------------------------------------------------------------- |
+| `yarn build`                             | Compile both packages.                                           |
+| `yarn build:watch`                       | Rebuild the server package on source changes.                    |
+| `yarn start`                             | Start the orchestrator (spawns the explorer or Vite dev server). |
+| `yarn type-check`                        | Run TypeScript checks for both packages.                         |
+| `yarn lint` / `yarn lint:fix`            | Lint (and optionally fix) all sources.                           |
+| `yarn docker:dev`                        | Build the image and launch the container.                        |
+| `yarn docker:down` / `yarn docker:clean` | Stop the container or remove volumes.                            |
 
 Package-specific scripts exist under each workspace; for example, `yarn workspace @bitcoin-regtest/web dev` runs the Vite dev server, while `yarn workspace @bitcoin-regtest/server start` launches the server with tsx.
 
 Recommended edit/test loop:
+
 1. `yarn workspace @bitcoin-regtest/server build:watch`
 2. `yarn start`
 3. Optional: `yarn workspace @bitcoin-regtest/web dev` if you want hot module replacement.
 
 ## Troubleshooting
 
-| Scenario | Resolution |
-| --- | --- |
-| Ports 18443/5173 already bound | Stop the conflicting process, e.g. `bitcoin-cli -regtest stop`, `pkill bitcoind`, or `yarn docker:down`. |
-| Reset regtest chainstate | Remove the regtest directory (`~/Library/Application Support/Bitcoin/regtest`, `~/.bitcoin/regtest`, or `%APPDATA%\Bitcoin\regtest`) or run `yarn docker:clean`. |
-| Broken installs/builds | `yarn clean && rm -rf node_modules packages/*/node_modules && yarn install && yarn build`. |
+| Scenario                       | Resolution                                                                                                                                                       |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ports 18443/5173 already bound | Stop the conflicting process, e.g. `bitcoin-cli -regtest stop`, `pkill bitcoind`, or `yarn docker:down`.                                                         |
+| Reset regtest chainstate       | Remove the regtest directory (`~/Library/Application Support/Bitcoin/regtest`, `~/.bitcoin/regtest`, or `%APPDATA%\Bitcoin\regtest`) or run `yarn docker:clean`. |
+| Broken installs/builds         | `yarn clean && rm -rf node_modules packages/*/node_modules && yarn install && yarn build`.                                                                       |
 
 Enable `DEBUG=bitcoin-regtest:*` (or similar custom logger) in the future if deeper instrumentation is added; for now, logs stream directly from the orchestrator and Vite/React consoles.
 
@@ -228,7 +236,7 @@ Enable `DEBUG=bitcoin-regtest:*` (or similar custom logger) in the future if dee
 `@bitcoin-regtest/server` is publishable to npm. The workflow is automated via `prepublishOnly`.
 
 1. Bump the version (`yarn version:patch|minor|major`).
-2. Run `yarn publish:server`.
+2. Run `yarn publish:server`. The `prepublishOnly` hook handles format/lint/type-check/build beforehand.
 3. Verify the published tarball includes `dist`, type declarations, and metadata.
 
 For manual control:
@@ -239,6 +247,35 @@ npm publish --access public
 ```
 
 Keep the usual release hygiene: update any changelog, ensure CI/test suites pass, and confirm you are logged in with publish rights.
+
+### Docker Images
+
+Local validation:
+
+```bash
+# Build locally
+docker build -t pessina/bitcoin-regtest:dev .
+```
+
+Tag suggestions for published images:
+
+- `latest` for the most recent stable build.
+- `vX.Y.Z` mirroring the npm version.
+- `ci-<build>` for ephemeral previews.
+
+Ensure the Docker Hub description references this repository and highlights the explorer capabilities.
+
+#### GitHub Actions Publishing
+
+A GitHub Actions workflow (`.github/workflows/docker-publish.yml`) supports manual publishing from the repo:
+
+1. Store Docker Hub credentials in repository secrets:
+   - `DOCKERHUB_USERNAME`
+   - `DOCKERHUB_TOKEN` (create a [Docker access token](https://hub.docker.com/settings/security)).
+2. Trigger **Publish Docker Image** from the GitHub Actions tab.
+3. Provide optional inputs (image, tag, npm_version). Defaults are `pessina/bitcoin-regtest:latest`.
+
+The workflow builds with Buildx (multi-platform ready) and pushes only when credentials are present; otherwise it performs a dry run.
 
 ## Contributing
 

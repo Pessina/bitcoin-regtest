@@ -42,7 +42,11 @@
     "cryptocurrency",
     "btc",
     "blockchain-explorer",
-    "bitcoin-development"
+    "bitcoin-development",
+    "bitcoin-regtest",
+    "regtest-explorer",
+    "bitcoin-devtools",
+    "integration-testing"
   ],
   "author": "Bitcoin Regtest Explorer Contributors",
   "license": "MIT",

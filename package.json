@@ -18,12 +18,8 @@
     "format:check": "prettier --check \"packages/**/*.{ts,tsx,js,json}\"",
     "type-check": "yarn workspace @bitcoin-regtest/server run type-check && yarn workspace @bitcoin-regtest/web run type-check",
     "docker:dev": "docker-compose up --build --force-recreate -d",
-    "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "docker:stop": "docker-compose stop",
-    "docker:restart": "docker-compose restart",
     "docker:logs": "docker-compose logs -f",
-    "docker:build": "docker-compose build",
     "docker:clean": "docker-compose down -v --remove-orphans",
     "prepublishOnly": "yarn format && yarn lint:fix && yarn type-check && yarn build",
     "version:patch": "yarn version --patch --no-git-tag-version",
@@ -41,7 +37,11 @@
     "auto-mining",
     "blockchain",
     "cryptocurrency",
-    "btc"
+    "btc",
+    "bitcoin-regtest",
+    "regtest-explorer",
+    "bitcoin-devtools",
+    "bitcoin-testing"
   ],
   "author": "",
   "license": "MIT",
@@ -53,9 +53,6 @@
     "url": "https://github.com/Pessina/bitcoin-regtest/issues"
   },
   "homepage": "https://github.com/Pessina/bitcoin-regtest#readme",
-  "dependencies": {
-    "bitcoin-core": "^5.0.0"
-  },
   "devDependencies": {
     "@eslint/js": "^9.38.0",
     "@types/node": "^24.9.1",
@@ -67,8 +64,6 @@
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "globals": "^16.4.0",
     "prettier": "^3.6.2",
-    "tsdown": "^0.15.9",
-    "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.2"
   },
