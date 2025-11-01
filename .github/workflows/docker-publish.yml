@@ -1,6 +1,9 @@
 name: Publish Docker Image
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       image:
@@ -25,7 +28,7 @@ jobs:
 
     env:
       IMAGE_NAME: ${{ github.event.inputs.image || 'pessina/bitcoin-regtest' }}
-      IMAGE_TAG: ${{ github.event.inputs.tag || 'latest' }}
+      IMAGE_TAG: ${{ github.event.inputs.tag || github.sha }}
 
     steps:
       - name: Checkout repository
@@ -44,7 +47,7 @@ jobs:
           images: ${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=${{ env.IMAGE_TAG }}
-            type=raw,value={{date 'YYYYMMDD-HHmm'}}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=ref,event=tag
             type=ref,event=branch
           labels: |

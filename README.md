@@ -272,8 +272,8 @@ A GitHub Actions workflow (`.github/workflows/docker-publish.yml`) supports manu
 1. Store Docker Hub credentials in repository secrets:
    - `DOCKERHUB_USERNAME`
    - `DOCKERHUB_TOKEN` (create a [Docker access token](https://hub.docker.com/settings/security)).
-2. Trigger **Publish Docker Image** from the GitHub Actions tab.
-3. Provide optional inputs (image, tag, npm_version). Defaults are `pessina/bitcoin-regtest:latest`.
+2. Any push to `main` automatically builds and pushes `pessina/bitcoin-regtest` with tags `latest` and the commit SHA (if credentials are configured).
+3. To publish from another branch or override tags, trigger **Publish Docker Image** manually from the Actions tab and provide optional inputs (`image`, `tag`, `npm_version`).
 
 The workflow builds with Buildx (multi-platform ready) and pushes only when credentials are present; otherwise it performs a dry run.
 
