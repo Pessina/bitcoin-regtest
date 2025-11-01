@@ -27,12 +27,26 @@ jobs:
       packages: write
 
     env:
-      IMAGE_NAME: ${{ github.event.inputs.image || 'pessina/bitcoin-regtest' }}
-      IMAGE_TAG: ${{ github.event.inputs.tag || github.sha }}
+      IMAGE_NAME: pessina/bitcoin-regtest
+      IMAGE_TAG: ${{ github.sha }}
+      OCI_VERSION: ""
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Apply workflow_dispatch inputs
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          if [ -n "${{ github.event.inputs.image }}" ]; then
+            echo "IMAGE_NAME=${{ github.event.inputs.image }}" >> "$GITHUB_ENV"
+          fi
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "IMAGE_TAG=${{ github.event.inputs.tag }}" >> "$GITHUB_ENV"
+          fi
+          if [ -n "${{ github.event.inputs.npm_version }}" ]; then
+            echo "OCI_VERSION=${{ github.event.inputs.npm_version }}" >> "$GITHUB_ENV"
+          fi
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -52,10 +66,10 @@ jobs:
             type=ref,event=branch
           labels: |
             org.opencontainers.image.source=${{ github.repository }}
-            org.opencontainers.image.version=${{ github.event.inputs.npm_version }}
+            org.opencontainers.image.version=${{ env.OCI_VERSION }}
 
       - name: Log in to Docker Hub
-        if: secrets.DOCKERHUB_USERNAME && secrets.DOCKERHUB_TOKEN
+        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -65,7 +79,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: ${{ secrets.DOCKERHUB_USERNAME && secrets.DOCKERHUB_TOKEN }}
+          push: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
