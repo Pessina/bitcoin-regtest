@@ -1,6 +1,6 @@
 {
   "name": "bitcoin-regtest-monorepo",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Bitcoin regtest environment with explorer UI",
   "type": "module",
@@ -8,15 +8,15 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "yarn workspace @bitcoin-regtest/server run build && yarn workspace @bitcoin-regtest/web run build",
-    "build:watch": "yarn workspace @bitcoin-regtest/server run build:watch",
-    "start": "yarn workspace @bitcoin-regtest/server run start",
+    "build": "yarn workspace bitcoin-regtest run build && yarn workspace @bitcoin-regtest/web run build",
+    "build:watch": "yarn workspace bitcoin-regtest run build:watch",
+    "start": "yarn workspace bitcoin-regtest run start",
     "clean": "rm -rf packages/*/dist packages/web/dist",
     "lint": "eslint packages/**/src/**/*.{ts,tsx}",
     "lint:fix": "eslint packages/**/src/**/*.{ts,tsx} --fix",
     "format": "prettier --write \"packages/**/*.{ts,tsx,js,json}\"",
     "format:check": "prettier --check \"packages/**/*.{ts,tsx,js,json}\"",
-    "type-check": "yarn workspace @bitcoin-regtest/server run type-check && yarn workspace @bitcoin-regtest/web run type-check",
+    "type-check": "yarn workspace bitcoin-regtest run type-check && yarn workspace @bitcoin-regtest/web run type-check",
     "docker:dev": "docker-compose up --build --force-recreate -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
@@ -25,7 +25,7 @@
     "version:patch": "yarn version --patch --no-git-tag-version",
     "version:minor": "yarn version --minor --no-git-tag-version",
     "version:major": "yarn version --major --no-git-tag-version",
-    "publish:server": "yarn workspace @bitcoin-regtest/server publish --access public"
+    "publish:server": "yarn workspace bitcoin-regtest publish --access public"
   },
   "keywords": [
     "bitcoin",

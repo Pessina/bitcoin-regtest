@@ -250,7 +250,7 @@ bitcoin-regtest/
 
 ```bash
 yarn test
-yarn workspace @bitcoin-regtest/server test
+yarn workspace bitcoin-regtest test
 yarn workspace @bitcoin-regtest/web test
 ```
 
@@ -270,7 +270,7 @@ describe('formatTimeAgo', () => {
 
 **Integration Tests:**
 ```typescript
-import { BitcoinRegtestManager } from '@bitcoin-regtest/server';
+import { BitcoinRegtestManager } from 'bitcoin-regtest';
 
 describe('BitcoinRegtestManager', () => {
   let manager: BitcoinRegtestManager;
