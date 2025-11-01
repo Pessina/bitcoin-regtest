@@ -82,18 +82,19 @@
  * ============================================================================
  */
 
-import { spawn, ChildProcess } from 'child_process';
+import { ChildProcess, spawn } from 'child_process';
+import { createReadStream, existsSync, statSync } from 'fs';
 import {
   createServer,
   IncomingMessage,
-  ServerResponse,
   request as httpRequest,
+  ServerResponse,
 } from 'http';
-import { createReadStream, existsSync, statSync } from 'fs';
+import { dirname, extname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { dirname, join, extname } from 'path';
 
 import { BitcoinRegtestManager } from './BitcoinRegtestManager.js';
+import { loadConfigFromEnv, mergeConfig } from './config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -119,6 +120,17 @@ const MIME_TYPES: Record<string, string> = {
   '.eot': 'application/vnd.ms-fontobject',
 };
 
+function resolveConfig() {
+  if (manager) {
+    return manager.getConfig();
+  }
+  return mergeConfig(loadConfigFromEnv());
+}
+
+function sanitizeHost(host: string): string {
+  return host.replace(/^https?:\/\//, '');
+}
+
 function printBanner() {
   const banner = `
 ╔═══════════════════════════════════════════════════════════════╗
@@ -133,21 +145,27 @@ function printBanner() {
 function printServiceInfo() {
   const isDocker = process.env.DOCKER_CONTAINER === 'true';
   const hostname = isDocker ? process.env.HOSTNAME || 'localhost' : 'localhost';
+  const config = resolveConfig();
+  const rpcHost = sanitizeHost(config.rpcHost);
 
   console.log('\n📡 Services Available:\n');
   console.log(`   🌐 Web UI:        http://${hostname}:5173`);
-  console.log(`   ⚡ Bitcoin RPC:   http://${hostname}:18443`);
+  console.log(`   ⚡ Bitcoin RPC:   http://${hostname}:${config.rpcPort}`);
 
   console.log('\n🔑 RPC Credentials:\n');
-  console.log('   Username:  test');
-  console.log('   Password:  test123');
+  console.log(`   Username:  ${config.rpcUser}`);
+  console.log(`   Password:  ${config.rpcPassword}`);
 
   if (manager) {
     const address = manager.getWalletAddress();
+    const intervalLabel =
+      config.autoMineIntervalMs % 1000 === 0
+        ? `${config.autoMineIntervalMs / 1000}s`
+        : `${config.autoMineIntervalMs}ms`;
     console.log('\n💰 Wallet Info:\n');
     console.log(`   Address:   ${address}`);
-    console.log('   Network:   regtest');
-    console.log('   Auto-mine: Every 10 seconds');
+    console.log(`   Network:   ${config.network}`);
+    console.log(`   Auto-mine: Every ${intervalLabel}`);
   }
 
   console.log('\n📚 Useful Commands:\n');
@@ -156,14 +174,20 @@ function printServiceInfo() {
     console.log('   docker logs -f bitcoin-regtest\n');
     console.log('   # Access RPC from host');
     console.log(
-      `   bitcoin-cli -regtest -rpcuser=test -rpcpassword=test123 -rpcconnect=${hostname} getblockchaininfo\n`
+      `   bitcoin-cli -regtest -rpcuser=${config.rpcUser} -rpcpassword=${config.rpcPassword} -rpcconnect=${hostname} -rpcport=${config.rpcPort} getblockchaininfo\n`
     );
     console.log('   # Stop container');
     console.log('   docker-compose down\n');
   } else {
-    console.log('   bitcoin-cli -regtest getblockchaininfo');
-    console.log('   bitcoin-cli -regtest getbalance');
-    console.log('   bitcoin-cli -regtest getnewaddress\n');
+    console.log(
+      `   bitcoin-cli -regtest -rpcuser=${config.rpcUser} -rpcpassword=${config.rpcPassword} -rpcconnect=${rpcHost} -rpcport=${config.rpcPort} getblockchaininfo`
+    );
+    console.log(
+      `   bitcoin-cli -regtest -rpcuser=${config.rpcUser} -rpcpassword=${config.rpcPassword} -rpcconnect=${rpcHost} -rpcport=${config.rpcPort} getbalance`
+    );
+    console.log(
+      `   bitcoin-cli -regtest -rpcuser=${config.rpcUser} -rpcpassword=${config.rpcPassword} -rpcconnect=${rpcHost} -rpcport=${config.rpcPort} getnewaddress\n`
+    );
   }
 
   console.log('📖 Documentation: https://github.com/Pessina/bitcoin-regtest\n');
@@ -187,12 +211,16 @@ function proxyRpcRequest(req: IncomingMessage, res: ServerResponse) {
   });
 
   req.on('end', () => {
-    const auth = Buffer.from('test:test123').toString('base64');
+    const config = resolveConfig();
+    const rpcHost = sanitizeHost(config.rpcHost);
+    const auth = Buffer.from(
+      `${config.rpcUser}:${config.rpcPassword}`
+    ).toString('base64');
 
     const proxyReq = httpRequest(
       {
-        hostname: 'localhost',
-        port: 18443,
+        hostname: rpcHost,
+        port: config.rpcPort,
         path: '/',
         method: 'POST',
         headers: {

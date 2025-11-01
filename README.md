@@ -5,56 +5,31 @@
 [![Node.js 22+](https://img.shields.io/badge/Node.js-22+-green?logo=node.js)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9+-blue?logo=typescript)](https://www.typescriptlang.org)
 
-A complete Bitcoin regtest environment with a web-based blockchain explorer. Designed for local development and testing of Bitcoin applications without managing bitcoind manually.
+Bitcoin Regtest Explorer is a self-contained Bitcoin Core regtest stack with a modern explorer UI and a programmatic control surface. It is designed for teams that need deterministic, scriptable Bitcoin environments without hand-managing `bitcoind`.
 
-## Screenshots
+## Why Teams Use It
+
+- Bitcoin Core 30 (regtest), the RPC proxy, auto-miner, and explorer ship in a single container.
+- A typed Node.js API (`BitcoinRegtestManager`) starts/stops Core, mines blocks, funds wallets, and exposes the raw RPC client for integration suites.
+- The React explorer mirrors mainnet tooling: mempool visibility, fee heuristics, block drill-down, UTXO inspection, and faucet utilities.
+- Configuration stays in environment variables, so you can adjust RPC credentials, ports, and mining cadence per pipeline run.
+
+## Screenshots (Reference)
 
 ### Explorer View
 ![Explorer View](docs/screenshots/explorer-view.png)
 
-Block explorer with real-time statistics, difficulty tracking, mempool monitoring, fee recommendations, and comprehensive block and transaction history with filtering capabilities.
-
 ### Mempool View
 ![Mempool View](docs/screenshots/mempool-view.png)
 
-Detailed mempool monitoring with transaction statistics, fee rate recommendations, and real-time view of unconfirmed transactions.
+## Getting Started
 
-## Features
+### Prerequisites
 
-### Core Functionality
-- **Auto-mining**: Automatic block generation every 10 seconds (configurable)
-- **Web Explorer**: Full-featured blockchain explorer UI
-- **Programmatic API**: BitcoinRegtestManager for integration testing
-- **RPC Proxy**: HTTP server proxies requests to bitcoind
-- **Docker Support**: Single-container deployment
+- **Docker workflow**: Docker Engine/Desktop and Docker Compose.
+- **Local workflow** (when running outside Docker): Node.js ≥ 22, Yarn ≥ 1.22, Bitcoin Core ≥ 30 on the PATH.
 
-### Web Explorer
-- Real-time blockchain statistics and difficulty tracking
-- Block explorer with transaction details
-- Address viewer with balance, UTXOs, and transaction history
-- Mempool monitoring with unconfirmed transactions
-- Fee estimation (low/medium/high priority)
-- Transaction broadcasting interface
-- Test faucet for funding addresses
-- Smart search (addresses, transactions, blocks)
-- Script type identification (P2TR, P2WPKH, P2PKH, P2SH, P2WSH)
-- SegWit and RBF transaction detection
-- QR code generation for addresses
-
-## Prerequisites
-
-**Docker (Recommended):**
-- Docker Engine or Docker Desktop
-- Docker Compose
-
-**Local Development:**
-- Node.js >= 22.0
-- Yarn >= 1.22
-- Bitcoin Core >= 30.0
-
-## Quick Start
-
-### Docker
+### Run with Docker (recommended)
 
 ```bash
 git clone https://github.com/Pessina/bitcoin-regtest.git
@@ -62,9 +37,35 @@ cd bitcoin-regtest
 yarn docker:dev
 ```
 
-Access the explorer at http://localhost:5173
+The explorer becomes available at http://localhost:5173 and the RPC endpoint is exposed on port `18443`.
 
-### Local Development
+#### Runtime Configuration
+
+The server merges defaults with environment variables. Override values inline when you start the container:
+
+```bash
+AUTO_MINE_INTERVAL_MS=5000 \
+AUTO_MINE_INITIAL_BLOCKS=150 \
+BITCOIN_RPC_HOST=0.0.0.0 \
+BITCOIN_RPC_USER=alice \
+BITCOIN_RPC_PASSWORD=supersecret \
+yarn docker:dev
+```
+
+Supported variables:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `BITCOIN_RPC_HOST` | `localhost` | Hostname/IP that the proxy uses to reach `bitcoind` (no protocol prefix). |
+| `BITCOIN_RPC_PORT` | `18443` | RPC port advertised internally and to the explorer proxy. |
+| `BITCOIN_RPC_USER` | `test` | RPC basic-auth username. |
+| `BITCOIN_RPC_PASSWORD` | `test123` | RPC basic-auth password. |
+| `AUTO_MINE_INITIAL_BLOCKS` | `101` | Blocks mined after wallet creation to unlock coinbase funds. |
+| `AUTO_MINE_INTERVAL_MS` | `10000` | Auto-mining cadence for the background block generator. |
+
+The same overrides apply to `docker compose up` or `docker run -e KEY=value ...`.
+
+### Run Locally (without Docker)
 
 ```bash
 git clone https://github.com/Pessina/bitcoin-regtest.git
@@ -74,12 +75,14 @@ yarn build
 yarn start
 ```
 
-**Endpoints:**
-- Web UI: http://localhost:5173
-- Bitcoin RPC: localhost:18443
-- RPC Credentials: `test` / `test123`
+Endpoints (defaults unless overridden):
+- Explorer UI: http://localhost:5173
+- Bitcoin RPC: `localhost:18443`
+- RPC credentials: `test` / `test123`
 
-## Project Structure
+Adjust configuration via environment variables before running `yarn start` to keep parity with Docker.
+
+## Project Layout
 
 ```
 bitcoin-regtest/
@@ -106,85 +109,34 @@ bitcoin-regtest/
 
 ## API Usage
 
-### BitcoinRegtestManager
-
-Core class for managing the Bitcoin regtest environment.
-
 ```typescript
 import { BitcoinRegtestManager } from '@bitcoin-regtest/server';
 
-const manager = new BitcoinRegtestManager(config?);
+const manager = new BitcoinRegtestManager({
+  autoMineIntervalMs: 5000, // optional overrides
+});
 ```
 
-#### Configuration
+`BitcoinRegtestManager` responsibilities:
+- Start/stop `bitcoind` and wait for readiness.
+- Create/load the dedicated regtest wallet and return a default address.
+- Mine initial spendable funds and continue mining on a timer.
+- Provide helper methods for block mining, funding, and direct RPC access.
 
-```typescript
-interface BitcoinRegtestConfig {
-  rpcHost?: string;              // Default: 'localhost'
-  rpcPort?: number;              // Default: 18443
-  rpcUser?: string;              // Default: 'test'
-  rpcPassword?: string;          // Default: 'test123'
-  network?: string;              // Default: 'regtest'
-  autoMineInitialBlocks?: number; // Default: 101
-  autoMineIntervalMs?: number;    // Default: 10000
-}
-```
-
-#### Methods
-
-**start(): Promise<void>**
-
-Starts bitcoind and begins auto-mining.
+Common calls:
 
 ```typescript
 await manager.start();
-```
-
-**shutdown(): Promise<void>**
-
-Stops bitcoind and auto-mining.
-
-```typescript
+const address = manager.getWalletAddress();
+await manager.mineBlocks(5);
+const txid = await manager.fundAddress('bcrt1qexample...', 1.5);
+const client = manager.getClient(); // full bitcoin-core RPC client
 await manager.shutdown();
 ```
 
-**getWalletAddress(): string**
+See [bitcoin-core documentation](https://github.com/ruimarinho/bitcoin-core) for the full RPC surface area.
 
-Returns the default wallet address.
-
-```typescript
-const address = manager.getWalletAddress();
-```
-
-**mineBlocks(count: number): Promise<void>**
-
-Mines the specified number of blocks.
-
-```typescript
-await manager.mineBlocks(5);
-```
-
-**fundAddress(address: string, amount: number): Promise<string>**
-
-Sends BTC to an address and mines 1 confirmation block. Returns transaction ID.
-
-```typescript
-const txid = await manager.fundAddress('bcrt1q...', 1.5);
-```
-
-**getClient(): BitcoinClient**
-
-Returns the Bitcoin Core RPC client for full API access.
-
-```typescript
-const client = manager.getClient();
-const height = await client.getBlockCount();
-const balance = await client.getBalance();
-```
-
-See [bitcoin-core documentation](https://github.com/ruimarinho/bitcoin-core) for complete RPC API.
-
-## Integration Testing Example
+## Integration Testing Pattern
 
 ```typescript
 import { BitcoinRegtestManager } from '@bitcoin-regtest/server';
@@ -226,202 +178,78 @@ describe('Bitcoin Integration Tests', () => {
 });
 ```
 
-## Architecture
+## Architecture Overview
 
-The system runs in a single Docker container with three components:
+Single-container deployment composed of:
 
-1. **Bitcoin Core (v30)**: Regtest network on port 18443
-2. **HTTP Server**: Serves static files and proxies `/rpc` to bitcoind
-3. **BitcoinRegtestManager**: Manages bitcoind lifecycle and auto-mining
+1. **Bitcoin Core v30 (regtest)** — runs with RPC enabled, wallet support, and `txindex`.
+2. **Server package** — boots `BitcoinRegtestManager`, proxies `/rpc` requests, and serves the explorer or launches Vite during development.
+3. **Explorer UI** — React + Vite frontend that consumes the RPC proxy for blockchain data, mempool statistics, fee insights, faucets, and broadcasting.
 
-**Data Flow:**
-1. Browser loads React application
-2. React calls API endpoints (`/rpc`)
-3. Server proxies requests to bitcoind (port 18443)
-4. bitcoind processes and returns data
-5. React updates UI
+Control flow:
+1. Container (or local process) launches `packages/server/dist/cli.js`.
+2. `BitcoinRegtestManager` starts `bitcoind`, prepares the wallet, and kicks off auto-mining.
+3. The server exposes `/rpc`, either serving static assets (production) or proxying to Vite (dev).
+4. The explorer uses `/rpc` for all Bitcoin data interactions.
 
-## Development
+## Development Workflow
 
-### Available Commands
+Use Yarn scripts from the repository root:
 
-```bash
-# Build
-yarn build                    # Build all packages
-yarn build:watch              # Build in watch mode
-yarn clean                    # Remove build artifacts
+| Command | Description |
+| --- | --- |
+| `yarn build` | Compile both packages. |
+| `yarn build:watch` | Rebuild the server package on source changes. |
+| `yarn start` | Start the orchestrator (spawns the explorer or Vite dev server). |
+| `yarn type-check` | Run TypeScript checks for both packages. |
+| `yarn lint` / `yarn lint:fix` | Lint (and optionally fix) all sources. |
+| `yarn docker:dev` | Build the image and launch the container. |
+| `yarn docker:down` / `yarn docker:clean` | Stop the container or remove volumes. |
 
-# Development
-yarn start                    # Start server
-yarn type-check               # TypeScript type checking
-yarn lint                     # Lint code
-yarn lint:fix                 # Fix linting issues
-yarn format                   # Format with Prettier
+Package-specific scripts exist under each workspace; for example, `yarn workspace @bitcoin-regtest/web dev` runs the Vite dev server, while `yarn workspace @bitcoin-regtest/server start` launches the server with tsx.
 
-# Docker
-yarn docker:dev               # Build and run
-yarn docker:build             # Build image
-yarn docker:up                # Start containers
-yarn docker:down              # Stop containers
-yarn docker:logs              # View logs
-yarn docker:clean             # Remove containers and volumes
-
-# Package-specific
-yarn workspace @bitcoin-regtest/server build
-yarn workspace @bitcoin-regtest/server start
-yarn workspace @bitcoin-regtest/web build
-yarn workspace @bitcoin-regtest/web dev
-```
-
-### Development Workflow
-
-**Server changes:**
-```bash
-# Terminal 1
-yarn workspace @bitcoin-regtest/server build:watch
-
-# Terminal 2
-yarn start
-```
-
-**Web UI changes:**
-```bash
-# Terminal 1
-yarn workspace @bitcoin-regtest/web dev
-
-# Terminal 2
-yarn start
-
-# Access: http://localhost:5173
-```
+Recommended edit/test loop:
+1. `yarn workspace @bitcoin-regtest/server build:watch`
+2. `yarn start`
+3. Optional: `yarn workspace @bitcoin-regtest/web dev` if you want hot module replacement.
 
 ## Troubleshooting
 
-### Port Already in Use
+| Scenario | Resolution |
+| --- | --- |
+| Ports 18443/5173 already bound | Stop the conflicting process, e.g. `bitcoin-cli -regtest stop`, `pkill bitcoind`, or `yarn docker:down`. |
+| Reset regtest chainstate | Remove the regtest directory (`~/Library/Application Support/Bitcoin/regtest`, `~/.bitcoin/regtest`, or `%APPDATA%\Bitcoin\regtest`) or run `yarn docker:clean`. |
+| Broken installs/builds | `yarn clean && rm -rf node_modules packages/*/node_modules && yarn install && yarn build`. |
 
-```bash
-# Stop bitcoind
-bitcoin-cli -regtest stop
-
-# Or kill process
-pkill bitcoind
-
-# Docker
-yarn docker:down
-```
-
-### Reset Blockchain Data
-
-**Local:**
-```bash
-# macOS
-rm -rf ~/Library/Application\ Support/Bitcoin/regtest
-
-# Linux
-rm -rf ~/.bitcoin/regtest
-
-# Windows
-rmdir /s %APPDATA%\Bitcoin\regtest
-```
-
-**Docker:**
-```bash
-yarn docker:clean
-```
-
-### Build Errors
-
-```bash
-yarn clean
-rm -rf node_modules packages/*/node_modules
-yarn install
-yarn build
-```
+Enable `DEBUG=bitcoin-regtest:*` (or similar custom logger) in the future if deeper instrumentation is added; for now, logs stream directly from the orchestrator and Vite/React consoles.
 
 ## Publishing
 
-The `@bitcoin-regtest/server` package can be published to npm. The publishing workflow includes automatic checks for code quality, type safety, and build success.
+`@bitcoin-regtest/server` is publishable to npm. The workflow is automated via `prepublishOnly`.
 
-### Version Management
+1. Bump the version (`yarn version:patch|minor|major`).
+2. Run `yarn publish:server`.
+3. Verify the published tarball includes `dist`, type declarations, and metadata.
 
-Bump the package version before publishing:
-
-```bash
-# Patch version (1.0.0 -> 1.0.1) - Bug fixes
-yarn version:patch
-
-# Minor version (1.0.0 -> 1.1.0) - New features
-yarn version:minor
-
-# Major version (1.0.0 -> 2.0.0) - Breaking changes
-yarn version:major
-```
-
-### Publishing to npm
-
-Publish the server package:
-
-```bash
-yarn publish:server
-```
-
-This command:
-1. Runs `prepublishOnly` hook automatically:
-   - Formats code with Prettier
-   - Fixes linting issues
-   - Runs TypeScript type checking
-   - Builds the package
-2. Publishes to npm with public access
-
-**Manual publishing:**
+For manual control:
 
 ```bash
 cd packages/server
 npm publish --access public
 ```
 
-**Pre-publish checklist:**
-- [ ] All tests pass
-- [ ] Version bumped appropriately
-- [ ] CHANGELOG updated (if applicable)
-- [ ] Code formatted and linted
-- [ ] Type checking passes
-- [ ] Build succeeds
-- [ ] Logged into npm (`npm login`)
+Keep the usual release hygiene: update any changelog, ensure CI/test suites pass, and confirm you are logged in with publish rights.
 
 ## Contributing
 
-Contributions are welcome. Please follow these guidelines:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/name`)
-3. Follow the code style:
-   - Run `yarn format` before committing
-   - Ensure `yarn type-check` passes
-   - Ensure `yarn build` succeeds
-4. Write clear commit messages using [Conventional Commits](https://www.conventionalcommits.org/)
-5. Submit a pull request
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+Contributions are welcome—follow the guidance in [CONTRIBUTING.md](CONTRIBUTING.md) and prefer Conventional Commit messages. Pull requests should include formatting, lint, type, and build checks.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License – see [LICENSE](LICENSE) for details.
 
-## Links
+## Useful Links
 
-- [GitHub Repository](https://github.com/Pessina/bitcoin-regtest)
 - [Issue Tracker](https://github.com/Pessina/bitcoin-regtest/issues)
-- [Bitcoin Core Documentation](https://bitcoin.org/en/bitcoin-core/)
-- [Bitcoin Core RPC API](https://github.com/ruimarinho/bitcoin-core)
-
-## Tech Stack
-
-- [Bitcoin Core](https://bitcoin.org/en/bitcoin-core/) - Bitcoin reference implementation
-- [bitcoin-core](https://github.com/ruimarinho/bitcoin-core) - Bitcoin RPC client for Node.js
-- [React](https://react.dev/) - UI framework
-- [TypeScript](https://www.typescriptlang.org/) - Type-safe JavaScript
-- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS
-- [shadcn/ui](https://ui.shadcn.com/) - Component library
-- [TanStack Query](https://tanstack.com/query) - Data synchronization
-- [Vite](https://vitejs.dev/) - Build tool
+- [Bitcoin Core Docs](https://bitcoin.org/en/bitcoin-core/)
+- [bitcoin-core Node.js Client](https://github.com/ruimarinho/bitcoin-core)

@@ -9,8 +9,14 @@ services:
       - "5173:5173"    # Web UI
     environment:
       - NODE_ENV=production
+      - BITCOIN_RPC_HOST=${BITCOIN_RPC_HOST:-localhost}
+      - BITCOIN_RPC_PORT=${BITCOIN_RPC_PORT:-18443}
+      - BITCOIN_RPC_USER=${BITCOIN_RPC_USER:-test}
+      - BITCOIN_RPC_PASSWORD=${BITCOIN_RPC_PASSWORD:-test123}
+      - AUTO_MINE_INITIAL_BLOCKS=${AUTO_MINE_INITIAL_BLOCKS:-101}
+      - AUTO_MINE_INTERVAL_MS=${AUTO_MINE_INTERVAL_MS:-10000}
     healthcheck:
-      test: ["CMD", "bitcoin-cli", "-regtest", "-rpcuser=test", "-rpcpassword=test123", "getblockchaininfo"]
+      test: ["CMD-SHELL", "bitcoin-cli -regtest -rpcuser=$${BITCOIN_RPC_USER} -rpcpassword=$${BITCOIN_RPC_PASSWORD} -rpcport=$${BITCOIN_RPC_PORT} getblockchaininfo"]
       interval: 30s
       timeout: 10s
       start_period: 40s

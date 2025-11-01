@@ -3,6 +3,7 @@ import { ChildProcess, spawn } from 'child_process';
 
 import {
   BitcoinRegtestConfig,
+  loadConfigFromEnv,
   mergeConfig,
   PartialBitcoinRegtestConfig,
 } from './config';
@@ -101,7 +102,11 @@ export class BitcoinRegtestManager {
    * ```
    */
   constructor(config?: PartialBitcoinRegtestConfig) {
-    this.config = mergeConfig(config);
+    const envConfig = loadConfigFromEnv();
+    this.config = mergeConfig({
+      ...envConfig,
+      ...config,
+    });
     this.client = new Client({
       host: `http://${this.config.rpcHost}:${this.config.rpcPort}`,
       username: this.config.rpcUser,
@@ -370,6 +375,15 @@ export class BitcoinRegtestManager {
     this.stopAutoMining();
     await this.stopBitcoind();
     this.log('Shutdown complete');
+  }
+
+  /**
+   * Return the effective configuration (defaults + overrides).
+   *
+   * @returns Resolved configuration object
+   */
+  getConfig(): BitcoinRegtestConfig {
+    return { ...this.config };
   }
 
   /**
