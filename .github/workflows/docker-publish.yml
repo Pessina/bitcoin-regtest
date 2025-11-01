@@ -27,7 +27,7 @@ jobs:
       packages: write
 
     env:
-      IMAGE_NAME: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.image) || 'pessina/bitcoin-regtest' }}
+      IMAGE_NAME: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.image) || 'fspessina/bitcoin-regtest' }}
       IMAGE_TAG: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.tag) || github.sha }}
       OCI_VERSION: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.npm_version) || '' }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME || '' }}
