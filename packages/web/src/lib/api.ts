@@ -1,6 +1,35 @@
 /**
  * Bitcoin RPC client for browser
- * Calls bitcoind RPC directly via Vite proxy
+ *
+ * ARCHITECTURE NOTE: Why we need the RPC proxy
+ * ============================================
+ *
+ * This client communicates with bitcoind through an HTTP proxy server, NOT directly.
+ * The browser CANNOT directly connect to bitcoind due to:
+ *
+ * 1. CORS (Cross-Origin Resource Sharing) restrictions:
+ *    - Browsers block cross-origin requests to protect users
+ *    - bitcoind does not send CORS headers
+ *    - Without the proxy, all RPC calls would fail with CORS errors
+ *
+ * 2. Authentication handling:
+ *    - bitcoind uses HTTP Basic Auth
+ *    - The proxy manages credentials securely
+ *
+ * HOW IT WORKS:
+ * -------------
+ * 1. Development Mode (NODE_ENV !== 'production'):
+ *    - Vite dev server runs on port 5173
+ *    - vite.config.ts proxies /rpc requests to localhost:18443 (bitcoind)
+ *    - Browser -> Vite (5173) -> bitcoind (18443)
+ *
+ * 2. Production Mode (NODE_ENV === 'production'):
+ *    - Server package's HTTP server serves static files on port 5173
+ *    - server.ts proxies /rpc requests to localhost:18443 (bitcoind)
+ *    - Browser -> Server (5173) -> bitcoind (18443)
+ *
+ * In BOTH modes, the web UI needs a proxy to communicate with bitcoind.
+ * Without the server package providing this proxy, the web UI is non-functional.
  */
 
 const RPC_URL = '/rpc';
@@ -758,7 +787,8 @@ export const api = {
     const currentEpoch = Math.floor(blockCount / RETARGET_INTERVAL);
     const nextRetargetHeight = (currentEpoch + 1) * RETARGET_INTERVAL;
     const remainingBlocks = nextRetargetHeight - blockCount;
-    const progressPercent = ((blockCount % RETARGET_INTERVAL) / RETARGET_INTERVAL) * 100;
+    const progressPercent =
+      ((blockCount % RETARGET_INTERVAL) / RETARGET_INTERVAL) * 100;
 
     const blocksInCurrentEpoch = blockCount % RETARGET_INTERVAL;
     if (blocksInCurrentEpoch < 10) {
@@ -805,9 +835,11 @@ export const api = {
     const estimatedDate = new Date(Date.now() + estimatedSeconds * 1000);
 
     const expectedBlockTime = 600;
-    const estimatedChange = ((expectedBlockTime - avgBlockTime) / expectedBlockTime) * 100;
+    const estimatedChange =
+      ((expectedBlockTime - avgBlockTime) / expectedBlockTime) * 100;
 
-    const networkHashrate = (info.difficulty * Math.pow(2, 32)) / expectedBlockTime / 1e12;
+    const networkHashrate =
+      (info.difficulty * Math.pow(2, 32)) / expectedBlockTime / 1e12;
 
     return {
       difficulty: info.difficulty,

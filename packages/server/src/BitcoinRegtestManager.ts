@@ -11,6 +11,69 @@ import { BitcoinRpcClient } from './types';
 /**
  * Manages a Bitcoin regtest environment with automatic mining and wallet management.
  * Provides a simple API for testing Bitcoin applications locally.
+ *
+ * ARCHITECTURE OVERVIEW
+ * =====================
+ *
+ * This class is the CORE ORCHESTRATION LAYER for the Bitcoin regtest environment.
+ * It provides functionality that Docker and Bitcoin Core alone cannot provide.
+ *
+ * KEY RESPONSIBILITIES:
+ * ---------------------
+ *
+ * 1. **Lifecycle Management**
+ *    - Spawns and manages the bitcoind daemon process
+ *    - Ensures bitcoind is running and responsive before proceeding
+ *    - Handles graceful shutdown of bitcoind
+ *
+ * 2. **Auto-Mining**
+ *    - Custom logic NOT provided by Bitcoin Core
+ *    - Automatically mines blocks at configurable intervals (default: 10s)
+ *    - Makes regtest useful without requiring manual block mining
+ *    - Mines initial 101 blocks to make coinbase rewards spendable
+ *
+ * 3. **Wallet Management**
+ *    - Automatically creates/loads the regtest wallet
+ *    - Provides a default wallet address for testing
+ *    - Manages wallet balance and funding operations
+ *
+ * 4. **Testing API**
+ *    - Clean programmatic interface for integration tests
+ *    - Methods: mineBlocks(), fundAddress(), getWalletAddress()
+ *    - Direct access to Bitcoin RPC client via getClient()
+ *
+ * RELATIONSHIP WITH OTHER COMPONENTS:
+ * -----------------------------------
+ *
+ * - **Docker**: Provides the container environment and Bitcoin Core binary
+ *   - Docker installs Bitcoin Core, but doesn't start or manage bitcoind
+ *   - This class handles starting and managing the bitcoind process
+ *
+ * - **Server Package (server.ts)**: Uses this class to initialize the environment
+ *   - Server calls manager.start() to set everything up
+ *   - Server proxies RPC requests from web UI to bitcoind
+ *   - Server serves the web UI (static files or Vite dev server)
+ *
+ * - **Web Package**: Does NOT import this class
+ *   - Web UI communicates with bitcoind via HTTP RPC proxy only
+ *   - No direct dependency on the server package
+ *
+ * WHY THIS CLASS IS ESSENTIAL:
+ * ----------------------------
+ *
+ * Without BitcoinRegtestManager:
+ * ✗ Manual bitcoind startup/shutdown required
+ * ✗ Manual wallet creation required
+ * ✗ Manual block mining required (every transaction needs manual mining)
+ * ✗ No programmatic API for testing
+ * ✗ Complex test setup code in every test file
+ *
+ * With BitcoinRegtestManager:
+ * ✓ Single line to start: await manager.start()
+ * ✓ Auto-mining handles block generation
+ * ✓ Wallet ready immediately
+ * ✓ Clean API for common operations
+ * ✓ Reusable across all test suites
  */
 export class BitcoinRegtestManager {
   private client: BitcoinRpcClient;

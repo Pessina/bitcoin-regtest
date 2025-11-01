@@ -1,8 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
-import QRCode from 'qrcode';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { Button } from './ui/button';
 import { QrCode } from 'lucide-react';
+import QRCode from 'qrcode';
+import { useEffect, useRef, useState } from 'react';
+
+import { Button } from './ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './ui/dialog';
 
 interface QRCodeDisplayProps {
   value: string;
@@ -10,25 +17,25 @@ interface QRCodeDisplayProps {
   size?: number;
 }
 
-export function QRCodeDisplay({ value, title = 'QR Code', size = 256 }: QRCodeDisplayProps) {
+export function QRCodeDisplay({
+  value,
+  title = 'QR Code',
+  size = 256,
+}: QRCodeDisplayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    QRCode.toCanvas(
-      canvasRef.current,
-      value,
-      {
-        width: size,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF',
-        },
-      }
-    ).catch((err) => {
+    QRCode.toCanvas(canvasRef.current, value, {
+      width: size,
+      margin: 2,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF',
+      },
+    }).catch((err) => {
       setError(err.message);
     });
   }, [value, size]);

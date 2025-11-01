@@ -1,6 +1,12 @@
-import { Badge } from './ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { RefreshCw, Zap } from 'lucide-react';
+
+import { Badge } from './ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from './ui/tooltip';
 
 interface TransactionBadgesProps {
   isRBF?: boolean;
@@ -25,20 +31,28 @@ export function TransactionBadges({
               </Badge>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Segregated Witness transaction - lower fees and improved scalability</p>
+              <p>
+                Segregated Witness transaction - lower fees and improved
+                scalability
+              </p>
             </TooltipContent>
           </Tooltip>
         )}
         {isRBF && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Badge variant="outline" className="gap-1 border-amber-500 text-amber-700 dark:text-amber-400">
+              <Badge
+                variant="outline"
+                className="gap-1 border-amber-500 text-amber-700 dark:text-amber-400"
+              >
                 <RefreshCw className="h-3 w-3" />
                 RBF
               </Badge>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Replace-By-Fee enabled - fee can be increased if unconfirmed</p>
+              <p>
+                Replace-By-Fee enabled - fee can be increased if unconfirmed
+              </p>
             </TooltipContent>
           </Tooltip>
         )}

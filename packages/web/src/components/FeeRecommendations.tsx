@@ -1,11 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
+import { Clock, DollarSign, TrendingUp, Zap } from 'lucide-react';
+
 import { api, FeeRecommendation } from '../lib/api';
-import { Card } from './ui/card';
-import { Clock, Zap, TrendingUp, DollarSign } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Card } from './ui/card';
 
 export function FeeRecommendations() {
-  const { data: fees, isLoading, error } = useQuery<FeeRecommendation>({
+  const {
+    data: fees,
+    isLoading,
+    error,
+  } = useQuery<FeeRecommendation>({
     queryKey: ['feeRecommendations'],
     queryFn: () => api.getFeeRecommendations(),
     refetchInterval: 30000,
@@ -69,35 +74,45 @@ export function FeeRecommendations() {
     <Card className="p-6">
       <div className="flex items-center gap-2 mb-4">
         <DollarSign className="h-5 w-5 text-gray-700" />
-        <h3 className="text-lg font-semibold text-gray-900">Fee Recommendations</h3>
+        <h3 className="text-lg font-semibold text-gray-900">
+          Fee Recommendations
+        </h3>
       </div>
       <div className="space-y-3">
-        {feeOptions.map(({ priority, icon: Icon, data, description, color, bgColor, borderColor }) => (
-          <div
-            key={priority}
-            className={`flex items-center justify-between p-3 rounded-lg border ${bgColor} ${borderColor}`}
-          >
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${bgColor}`}>
-                <Icon className={`h-4 w-4 ${color}`} />
-              </div>
-              <div>
-                <div className="font-semibold text-sm text-gray-900">{priority}</div>
-                <div className="text-xs text-gray-500">
-                  {description}
+        {feeOptions.map(
+          ({
+            priority,
+            icon: Icon,
+            data,
+            description,
+            color,
+            bgColor,
+            borderColor,
+          }) => (
+            <div
+              key={priority}
+              className={`flex items-center justify-between p-3 rounded-lg border ${bgColor} ${borderColor}`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${bgColor}`}>
+                  <Icon className={`h-4 w-4 ${color}`} />
+                </div>
+                <div>
+                  <div className="font-semibold text-sm text-gray-900">
+                    {priority}
+                  </div>
+                  <div className="text-xs text-gray-500">{description}</div>
                 </div>
               </div>
-            </div>
-            <div className="text-right">
-              <div className={`text-base font-bold ${color}`}>
-                {data.satPerVByte} sat/vB
-              </div>
-              <div className="text-xs text-gray-500">
-                {data.eta}
+              <div className="text-right">
+                <div className={`text-base font-bold ${color}`}>
+                  {data.satPerVByte} sat/vB
+                </div>
+                <div className="text-xs text-gray-500">{data.eta}</div>
               </div>
             </div>
-          </div>
-        ))}
+          )
+        )}
       </div>
       <div className="mt-4 text-xs text-gray-500">
         Fee estimates are based on recent network activity and may vary.

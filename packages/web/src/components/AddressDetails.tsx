@@ -3,9 +3,9 @@ import {
   ArrowDownLeft,
   ArrowLeft,
   ArrowUpRight,
+  Clock,
   Coins,
   Wallet,
-  Clock,
 } from 'lucide-react';
 
 import { api } from '../lib/api';
@@ -133,7 +133,9 @@ export function AddressDetails({ address, onBack }: AddressDetailsProps) {
                 <h3 className="font-semibold mb-3">Unspent Outputs</h3>
                 <div className="space-y-2">
                   {result.utxos.map((utxo, idx) => {
-                    const age = blockchainInfo ? blockchainInfo.blocks - utxo.height : 0;
+                    const age = blockchainInfo
+                      ? blockchainInfo.blocks - utxo.height
+                      : 0;
                     return (
                       <div
                         key={`${utxo.txid}-${utxo.vout}`}
@@ -143,7 +145,9 @@ export function AddressDetails({ address, onBack }: AddressDetailsProps) {
                           <span className="text-muted-foreground">
                             UTXO #{idx + 1}
                           </span>
-                          <span className="font-semibold">{utxo.amount} BTC</span>
+                          <span className="font-semibold">
+                            {utxo.amount} BTC
+                          </span>
                         </div>
                         <code className="text-xs text-muted-foreground font-mono block mt-1">
                           {utxo.txid.slice(0, 16)}...:{utxo.vout}
@@ -153,7 +157,9 @@ export function AddressDetails({ address, onBack }: AddressDetailsProps) {
                           {blockchainInfo && (
                             <div className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              <span>{age} block{age !== 1 ? 's' : ''} old</span>
+                              <span>
+                                {age} block{age !== 1 ? 's' : ''} old
+                              </span>
                             </div>
                           )}
                         </div>

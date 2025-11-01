@@ -19,13 +19,13 @@ export function Search({ onSearch }: SearchProps) {
 
     let type: 'address' | 'transaction';
 
-    if (trimmedQuery.length === 64) {
+    if (trimmedQuery.length === 64 && /^[0-9a-fA-F]{64}$/.test(trimmedQuery)) {
       type = 'transaction';
-    } else if (/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(trimmedQuery) ||
-               /^bc1[a-z0-9]{39,87}$/.test(trimmedQuery)) {
+    } else if (
+      /^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(trimmedQuery) ||
+      /^bc1[a-z0-9]{39,87}$/.test(trimmedQuery)
+    ) {
       type = 'address';
-    } else if (trimmedQuery.length === 64 && /^[0-9a-fA-F]{64}$/.test(trimmedQuery)) {
-      type = 'transaction';
     } else {
       type = 'address';
     }

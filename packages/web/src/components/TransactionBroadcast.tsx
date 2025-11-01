@@ -1,14 +1,25 @@
+import { AlertCircle, CheckCircle2, Radio } from 'lucide-react';
 import { useState } from 'react';
+
 import { api } from '../lib/api';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { Button } from './ui/button';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { Radio, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Button } from './ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './ui/dialog';
 
 export function TransactionBroadcast() {
   const [rawTx, setRawTx] = useState('');
   const [broadcasting, setBroadcasting] = useState(false);
-  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [result, setResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   const handleBroadcast = async () => {
@@ -60,9 +71,11 @@ export function TransactionBroadcast() {
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Transaction Hex</label>
+            <label className="text-sm font-medium text-gray-700">
+              Transaction Hex
+            </label>
             <textarea
-              className="w-full min-h-[120px] p-3 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-600"
+              className="w-full min-h-[120px] p-3 rounded-lg border border-gray-300 bg-white text-gray-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
               placeholder="01000000..."
               value={rawTx}
               onChange={(e) => setRawTx(e.target.value)}
@@ -78,15 +91,24 @@ export function TransactionBroadcast() {
                 <AlertCircle className="h-4 w-4" />
               )}
               <AlertTitle>{result.success ? 'Success' : 'Error'}</AlertTitle>
-              <AlertDescription className="break-all">{result.message}</AlertDescription>
+              <AlertDescription className="break-all">
+                {result.message}
+              </AlertDescription>
             </Alert>
           )}
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={handleClose} disabled={broadcasting}>
+            <Button
+              variant="outline"
+              onClick={handleClose}
+              disabled={broadcasting}
+            >
               Close
             </Button>
-            <Button onClick={handleBroadcast} disabled={broadcasting || !rawTx.trim()}>
+            <Button
+              onClick={handleBroadcast}
+              disabled={broadcasting || !rawTx.trim()}
+            >
               {broadcasting ? 'Broadcasting...' : 'Broadcast'}
             </Button>
           </div>

@@ -2,6 +2,84 @@
  * Server module for managing Bitcoin regtest environment and web UI
  * Development: Spawns Vite dev server
  * Production: Serves static files from built web UI
+ *
+ * ============================================================================
+ * ARCHITECTURE: Docker vs Server Package - What Each Provides
+ * ============================================================================
+ *
+ * WHY THE SERVER PACKAGE IS NECESSARY (NOT REDUNDANT)
+ * ====================================================
+ *
+ * While Docker handles the runtime environment and Bitcoin Core installation,
+ * the server package provides the ORCHESTRATION LAYER that makes everything work.
+ *
+ * WHAT DOCKER PROVIDES:
+ * ---------------------
+ * 1. Container environment (isolation, networking)
+ * 2. Bitcoin Core v30 binary installation
+ * 3. Port exposure (18443 for RPC, 5173 for web UI)
+ * 4. Runtime dependencies (Node.js, etc.)
+ *
+ * WHAT THE SERVER PACKAGE PROVIDES (CRITICAL FUNCTIONALITY):
+ * ----------------------------------------------------------
+ * 1. **bitcoind Lifecycle Management** (BitcoinRegtestManager)
+ *    - Spawns and controls the bitcoind daemon
+ *    - Manages graceful startup and shutdown
+ *    - Ensures bitcoind is ready before accepting connections
+ *
+ * 2. **Auto-Mining Logic** (BitcoinRegtestManager)
+ *    - Automatically mines blocks every 10 seconds (configurable)
+ *    - This is custom logic, NOT part of Bitcoin Core
+ *    - Essential for regtest to be useful without manual intervention
+ *    - Mines initial 101 blocks to make funds spendable
+ *
+ * 3. **Wallet Management** (BitcoinRegtestManager)
+ *    - Creates and loads wallets automatically
+ *    - Provides wallet addresses for testing
+ *    - Manages wallet balance and funding
+ *
+ * 4. **RPC Proxy** (this file - server.ts)
+ *    - CRITICAL: Browsers cannot directly connect to bitcoind due to CORS
+ *    - Proxies /rpc requests from web UI to bitcoind (port 18443)
+ *    - Handles Basic Authentication credentials
+ *    - Without this proxy, the web UI is completely non-functional
+ *
+ * 5. **Web UI Server** (this file - server.ts)
+ *    - Production: Serves static files from packages/web/dist
+ *    - Development: Spawns and manages Vite dev server
+ *    - Both modes require the proxy for RPC communication
+ *
+ * 6. **Programmatic API** (BitcoinRegtestManager)
+ *    - Clean TypeScript API for integration testing
+ *    - Methods like mineBlocks(), fundAddress(), getClient()
+ *    - Reusable library for testing Bitcoin applications
+ *
+ * SYSTEM FLOW:
+ * ------------
+ * 1. Docker container starts
+ * 2. Node.js executes packages/server/dist/cli.js
+ * 3. BitcoinRegtestManager starts bitcoind daemon
+ * 4. Wallet is created/loaded automatically
+ * 5. Initial blocks are mined (if needed)
+ * 6. Auto-mining timer starts (mines 1 block every 10s)
+ * 7. HTTP server starts:
+ *    - Production: Serves static files + proxies /rpc
+ *    - Development: Spawns Vite + relies on Vite's proxy
+ * 8. Web UI loads and communicates via /rpc proxy
+ *
+ * WHY YOU CAN'T JUST DELETE THE SERVER PACKAGE:
+ * ----------------------------------------------
+ * Without the server package:
+ * ✗ No auto-mining (regtest would require manual block mining)
+ * ✗ No RPC proxy (web UI cannot communicate with bitcoind)
+ * ✗ No orchestration (manual bitcoind startup/shutdown)
+ * ✗ No wallet automation (manual wallet creation)
+ * ✗ No programmatic API for testing
+ * ✗ No web UI server in production mode
+ *
+ * The server package is the "brain" that orchestrates everything.
+ * Docker is just the "container" that provides the environment.
+ * ============================================================================
  */
 
 import { spawn, ChildProcess } from 'child_process';

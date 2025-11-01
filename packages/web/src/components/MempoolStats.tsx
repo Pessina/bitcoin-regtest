@@ -1,11 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
+import { Activity, Coins, Database, FileText } from 'lucide-react';
+
 import { api, MempoolInfo } from '../lib/api';
-import { Card } from './ui/card';
-import { Database, FileText, Coins, Activity } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Card } from './ui/card';
 
 export function MempoolStats() {
-  const { data: mempoolInfo, isLoading, error } = useQuery<MempoolInfo>({
+  const {
+    data: mempoolInfo,
+    isLoading,
+    error,
+  } = useQuery<MempoolInfo>({
     queryKey: ['mempoolInfo'],
     queryFn: () => api.getMempoolInfo(),
     refetchInterval: 10000,
@@ -71,7 +76,9 @@ export function MempoolStats() {
     <Card className="p-6">
       <div className="flex items-center gap-2 mb-4">
         <Activity className="h-5 w-5 text-gray-700" />
-        <h3 className="text-lg font-semibold text-gray-900">Mempool Statistics</h3>
+        <h3 className="text-lg font-semibold text-gray-900">
+          Mempool Statistics
+        </h3>
       </div>
       <div className="grid grid-cols-2 gap-3">
         {stats.map(({ label, value, icon: Icon, color, bgColor }) => (

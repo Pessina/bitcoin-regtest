@@ -7,6 +7,18 @@
 
 A complete Bitcoin regtest environment with a web-based blockchain explorer. Designed for local development and testing of Bitcoin applications without managing bitcoind manually.
 
+## Screenshots
+
+### Explorer View
+![Explorer View](docs/screenshots/explorer-view.png)
+
+Block explorer with real-time statistics, difficulty tracking, mempool monitoring, fee recommendations, and comprehensive block and transaction history with filtering capabilities.
+
+### Mempool View
+![Mempool View](docs/screenshots/mempool-view.png)
+
+Detailed mempool monitoring with transaction statistics, fee rate recommendations, and real-time view of unconfirmed transactions.
+
 ## Features
 
 ### Core Functionality
@@ -325,6 +337,57 @@ rm -rf node_modules packages/*/node_modules
 yarn install
 yarn build
 ```
+
+## Publishing
+
+The `@bitcoin-regtest/server` package can be published to npm. The publishing workflow includes automatic checks for code quality, type safety, and build success.
+
+### Version Management
+
+Bump the package version before publishing:
+
+```bash
+# Patch version (1.0.0 -> 1.0.1) - Bug fixes
+yarn version:patch
+
+# Minor version (1.0.0 -> 1.1.0) - New features
+yarn version:minor
+
+# Major version (1.0.0 -> 2.0.0) - Breaking changes
+yarn version:major
+```
+
+### Publishing to npm
+
+Publish the server package:
+
+```bash
+yarn publish:server
+```
+
+This command:
+1. Runs `prepublishOnly` hook automatically:
+   - Formats code with Prettier
+   - Fixes linting issues
+   - Runs TypeScript type checking
+   - Builds the package
+2. Publishes to npm with public access
+
+**Manual publishing:**
+
+```bash
+cd packages/server
+npm publish --access public
+```
+
+**Pre-publish checklist:**
+- [ ] All tests pass
+- [ ] Version bumped appropriately
+- [ ] CHANGELOG updated (if applicable)
+- [ ] Code formatted and linted
+- [ ] Type checking passes
+- [ ] Build succeeds
+- [ ] Logged into npm (`npm login`)
 
 ## Contributing
 

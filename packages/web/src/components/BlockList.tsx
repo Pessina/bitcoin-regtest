@@ -1,13 +1,19 @@
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Blocks, Hash, Clock, Database } from 'lucide-react';
+import { Blocks, Clock, Database, Hash } from 'lucide-react';
+import { useState } from 'react';
+
 import { api, Block } from '../lib/api';
-import { Card } from './ui/card';
-import { CopyableAddress } from './CopyableAddress';
-import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
-import { Badge } from './ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { formatTimeAgoWithTooltip } from '../lib/timeUtils';
+import { CopyableAddress } from './CopyableAddress';
+import { Badge } from './ui/badge';
+import { Card } from './ui/card';
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from './ui/tooltip';
 
 type SortOrder = 'newest' | 'oldest';
 
@@ -53,7 +59,10 @@ export function BlockList() {
             </Badge>
           )}
         </div>
-        <Tabs value={sortOrder} onValueChange={(value) => setSortOrder(value as SortOrder)}>
+        <Tabs
+          value={sortOrder}
+          onValueChange={(value) => setSortOrder(value as SortOrder)}
+        >
           <TabsList>
             <TabsTrigger value="newest">Newest</TabsTrigger>
             <TabsTrigger value="oldest">Oldest</TabsTrigger>
@@ -68,7 +77,7 @@ export function BlockList() {
             return (
               <div
                 key={block.hash}
-                onClick={() => window.location.hash = `block/${block.hash}`}
+                onClick={() => (window.location.hash = `block/${block.hash}`)}
                 className="border rounded-lg p-4 hover:border-blue-300 hover:bg-blue-50/50 transition-all cursor-pointer"
               >
                 <div className="flex items-start justify-between gap-4 mb-2">
@@ -99,9 +108,7 @@ export function BlockList() {
                   <TooltipTrigger asChild>
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Clock className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                      <span className="text-xs">
-                        {timeAgo}
-                      </span>
+                      <span className="text-xs">{timeAgo}</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>

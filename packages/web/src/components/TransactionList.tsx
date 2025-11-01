@@ -14,13 +14,18 @@ import {
 import { useState } from 'react';
 
 import { api, type RecentTransaction } from '../lib/api';
+import { formatTimeAgoWithTooltip } from '../lib/timeUtils';
 import { CopyableAddress } from './CopyableAddress';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-import { formatTimeAgoWithTooltip } from '../lib/timeUtils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from './ui/tooltip';
 
 type TransactionFilter = 'all' | 'hide-rewards' | 'only-rewards';
 
@@ -79,9 +84,7 @@ export function TransactionList() {
     return (
       <Card className="p-6">
         <div className="flex flex-col items-center justify-center py-12">
-          <div className="text-red-600 mb-4">
-            Failed to load transactions
-          </div>
+          <div className="text-red-600 mb-4">Failed to load transactions</div>
           <Button onClick={() => refetch()} variant="outline" size="sm">
             Try Again
           </Button>
@@ -95,14 +98,19 @@ export function TransactionList() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Package className="h-5 w-5 text-gray-700" />
-          <h2 className="text-lg font-semibold text-gray-900">Transaction History</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            Transaction History
+          </h2>
           {allTransactions.length > 0 && (
             <Badge variant="secondary" className="ml-2">
               {allTransactions.length}
             </Badge>
           )}
         </div>
-        <Tabs value={filter} onValueChange={(value) => setFilter(value as TransactionFilter)}>
+        <Tabs
+          value={filter}
+          onValueChange={(value) => setFilter(value as TransactionFilter)}
+        >
           <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="hide-rewards">Normal</TabsTrigger>
@@ -128,7 +136,7 @@ export function TransactionList() {
               return (
                 <div
                   key={tx.txid}
-                  onClick={() => window.location.hash = `tx/${tx.txid}`}
+                  onClick={() => (window.location.hash = `tx/${tx.txid}`)}
                   className="border rounded-lg p-3 hover:border-blue-300 hover:bg-blue-50/50 transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-2">

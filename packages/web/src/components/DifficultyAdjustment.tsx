@@ -1,12 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
+import { Minus, Target, TrendingDown, TrendingUp } from 'lucide-react';
+
 import { api, NetworkStats } from '../lib/api';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Card } from './ui/card';
 import { Progress } from './ui/progress';
-import { Target, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 export function DifficultyAdjustment() {
-  const { data: stats, isLoading, error } = useQuery<NetworkStats>({
+  const {
+    data: stats,
+    isLoading,
+    error,
+  } = useQuery<NetworkStats>({
     queryKey: ['networkStats'],
     queryFn: () => api.getNetworkStats(),
     refetchInterval: 60000,
@@ -60,7 +65,9 @@ export function DifficultyAdjustment() {
           <Target className="h-4 w-4 text-gray-700" />
           <h3 className="text-sm font-semibold">Difficulty Adjustment</h3>
         </div>
-        <div className={`flex items-center gap-1 text-xs font-bold ${changeColor}`}>
+        <div
+          className={`flex items-center gap-1 text-xs font-bold ${changeColor}`}
+        >
           {changeIcon}
           {nextRetarget.estimatedChange > 0 ? '+' : ''}
           {nextRetarget.estimatedChange.toFixed(1)}%
