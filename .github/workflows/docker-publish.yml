@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       image:
-        description: Docker image name (e.g. pessina/bitcoin-regtest)
+        description: Docker image name (e.g. fspessina/bitcoin-regtest)
         required: false
-        default: pessina/bitcoin-regtest
+        default: fspessina/bitcoin-regtest
       tag:
         description: Docker image tag (e.g. latest or v1.0.0)
         required: false
