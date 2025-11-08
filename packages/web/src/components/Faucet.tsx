@@ -3,6 +3,7 @@ import { Droplet, Send } from 'lucide-react';
 import { useState } from 'react';
 
 import { api } from '../lib/api';
+import { CopyableAddress } from './CopyableAddress';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
@@ -98,9 +99,11 @@ export function Faucet() {
                 <Send className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">Transaction ID</span>
               </div>
-              <code className="text-xs bg-background px-2 py-1 rounded font-mono block break-all">
-                {txid}
-              </code>
+              <CopyableAddress
+                address={txid}
+                truncate={false}
+                className="text-xs bg-background px-2 py-1 rounded font-mono justify-between w-full"
+              />
             </div>
             <div className="text-sm text-muted-foreground">
               Funds sent successfully! The transaction will be included in the

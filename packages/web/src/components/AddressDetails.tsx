@@ -7,6 +7,7 @@ import {
   Coins,
   Wallet,
 } from 'lucide-react';
+import type { KeyboardEvent } from 'react';
 
 import { api } from '../lib/api';
 import { CopyableAddress } from './CopyableAddress';
@@ -39,6 +40,22 @@ export function AddressDetails({ address, onBack }: AddressDetailsProps) {
     queryFn: () => api.getBlockchainInfo(),
     refetchInterval: 5000,
   });
+
+  const navigateToTransaction = (txid: string) => {
+    window.location.hash = `tx/${txid}`;
+  };
+
+  const navigateToBlock = (target: number) => {
+    window.location.hash = `block/${target}`;
+  };
+
+  const getKeyHandler =
+    (callback: () => void) => (event: KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        callback();
+      }
+    };
 
   if (isLoading) {
     return (
@@ -139,7 +156,13 @@ export function AddressDetails({ address, onBack }: AddressDetailsProps) {
                     return (
                       <div
                         key={`${utxo.txid}-${utxo.vout}`}
-                        className="text-sm border-b pb-2 last:border-0"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => navigateToTransaction(utxo.txid)}
+                        onKeyDown={getKeyHandler(() =>
+                          navigateToTransaction(utxo.txid)
+                        )}
+                        className="text-sm border-b pb-2 last:border-0 rounded-md transition-colors cursor-pointer hover:bg-blue-50/60 hover:border-blue-300"
                       >
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">
@@ -149,11 +172,24 @@ export function AddressDetails({ address, onBack }: AddressDetailsProps) {
                             {utxo.amount} BTC
                           </span>
                         </div>
-                        <code className="text-xs text-muted-foreground font-mono block mt-1">
-                          {utxo.txid.slice(0, 16)}...:{utxo.vout}
-                        </code>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1 flex-wrap">
+                          <CopyableAddress
+                            address={utxo.txid}
+                            className="text-xs text-muted-foreground"
+                          />
+                          <span className="text-xs">:{utxo.vout}</span>
+                        </div>
                         <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
-                          <span>Height: {utxo.height}</span>
+                          <button
+                            type="button"
+                            className="underline-offset-2 hover:underline"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              navigateToBlock(utxo.height);
+                            }}
+                          >
+                            Block #{utxo.height}
+                          </button>
                           {blockchainInfo && (
                             <div className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
@@ -177,7 +213,13 @@ export function AddressDetails({ address, onBack }: AddressDetailsProps) {
                   {result.transactions.map((tx) => (
                     <div
                       key={tx.txid}
-                      className="text-sm border-b pb-3 last:border-0"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => navigateToTransaction(tx.txid)}
+                      onKeyDown={getKeyHandler(() =>
+                        navigateToTransaction(tx.txid)
+                      )}
+                      className="text-sm border-b pb-3 last:border-0 rounded-md transition-colors cursor-pointer hover:bg-blue-50/60 hover:border-blue-300"
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-2">
@@ -201,9 +243,10 @@ export function AddressDetails({ address, onBack }: AddressDetailsProps) {
                           {tx.amount} BTC
                         </span>
                       </div>
-                      <code className="text-xs text-muted-foreground font-mono block">
-                        {tx.txid.slice(0, 32)}...
-                      </code>
+                      <CopyableAddress
+                        address={tx.txid}
+                        className="text-xs text-muted-foreground block"
+                      />
                       <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
                         <span>{formatDate(tx.time)}</span>
                         <span>
@@ -211,9 +254,16 @@ export function AddressDetails({ address, onBack }: AddressDetailsProps) {
                           {tx.confirmations !== 1 ? 's' : ''}
                         </span>
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Block: {tx.blockHeight}
-                      </div>
+                      <button
+                        type="button"
+                        className="text-xs text-blue-600 hover:underline mt-1"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          navigateToBlock(tx.blockHeight);
+                        }}
+                      >
+                        View block #{tx.blockHeight}
+                      </button>
                     </div>
                   ))}
                 </div>

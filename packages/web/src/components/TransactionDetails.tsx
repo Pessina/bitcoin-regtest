@@ -8,6 +8,7 @@ import {
   Database,
   Hash,
 } from 'lucide-react';
+import type { KeyboardEvent } from 'react';
 
 import { api } from '../lib/api';
 import { CopyableAddress } from './CopyableAddress';
@@ -78,6 +79,19 @@ export function TransactionDetails({ txid, onBack }: TransactionDetailsProps) {
 
   const isCoinbase = tx.inputs[0]?.isCoinbase;
   const isSegWit = tx.weight < tx.size * 4;
+  const navigateToBlock = (target?: string | number) => {
+    const destination = target ?? tx.blockHash ?? tx.blockHeight;
+    if (!destination) return;
+    window.location.hash = `block/${destination}`;
+  };
+
+  const getKeyHandler =
+    (callback: () => void) => (event: KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        callback();
+      }
+    };
 
   return (
     <div className="space-y-6">
@@ -121,12 +135,24 @@ export function TransactionDetails({ txid, onBack }: TransactionDetailsProps) {
                 </div>
               </div>
 
-              <div className="border rounded-lg p-4">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => navigateToBlock()}
+                onKeyDown={getKeyHandler(() => navigateToBlock())}
+                className="border rounded-lg p-4 cursor-pointer transition-colors hover:border-blue-300 hover:bg-blue-50/60"
+              >
                 <div className="flex items-center gap-2 mb-2">
                   <Database className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Block</span>
                 </div>
-                <div className="text-sm">#{tx.blockHeight}</div>
+                <div className="text-sm font-semibold">#{tx.blockHeight}</div>
+                {tx.blockHash && (
+                  <CopyableAddress
+                    address={tx.blockHash}
+                    className="mt-1 text-xs text-muted-foreground"
+                  />
+                )}
               </div>
 
               <div className="border rounded-lg p-4">
@@ -172,8 +198,16 @@ export function TransactionDetails({ txid, onBack }: TransactionDetailsProps) {
                           </span>
                         </div>
                         {input.txid && (
-                          <div className="text-xs text-muted-foreground">
-                            {input.txid.slice(0, 16)}...:{input.vout}
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                            <CopyableAddress
+                              address={input.txid}
+                              className="text-xs text-muted-foreground"
+                            />
+                            {typeof input.vout === 'number' && (
+                              <span className="text-xs text-muted-foreground">
+                                :{input.vout}
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
